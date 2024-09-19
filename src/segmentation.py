@@ -54,7 +54,7 @@ def create_color_mask(image):
 def process_image(image_path):
     img = load_image(image_path)
     img_resized = cv2.resize(img, (640, 480))
-    create_color_mask(img_resized)
+    mask = create_color_mask(img_resized)
 
     result = cv2.bitwise_and(img_resized, img_resized, mask=mask)
 
