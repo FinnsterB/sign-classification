@@ -51,31 +51,39 @@ def create_color_mask(image):
     return mask
 
 
+def create_largest_contour_mask(image, color_mask):
+    contours, _ = cv2.findContours(
+        color_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+    )
+
+    # IF no contours are found return empty mask
+    if len(contours) == 0:
+        print("WARNING: No contours found")
+        return np.zeros_like(image)
+
+    largest_contour = max(contours, key=cv2.contourArea)
+
+    contour_mask = np.zeros_like(image)
+
+    cv2.drawContours(
+        contour_mask,
+        [largest_contour],
+        -1,
+        (255, 255, 255),
+        thickness=cv2.FILLED,
+    )
+    return contour_mask
+
+
 def process_image(image_path):
     img = load_image(image_path)
     img_resized = cv2.resize(img, (640, 480))
     mask = create_color_mask(img_resized)
 
-    result = cv2.bitwise_and(img_resized, img_resized, mask=mask)
+    largest_contour_mask = create_largest_contour_mask(img_resized, mask)
 
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    if len(contours) > 0:
-        largest_contour = max(contours, key=cv2.contourArea)
-
-        mask_largest = np.zeros_like(img_resized)
-
-        cv2.drawContours(
-            mask_largest,
-            [largest_contour],
-            -1,
-            (255, 255, 255),
-            thickness=cv2.FILLED,
-        )
-
-        img_largest_contour = cv2.bitwise_and(img_resized, mask_largest)
-        return img_largest_contour
-    return img_resized
+    img_largest_contour = cv2.bitwise_and(img_resized, largest_contour_mask)
+    return img_largest_contour
 
 
 def segment_images(image_dir):
