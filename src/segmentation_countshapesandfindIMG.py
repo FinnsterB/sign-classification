@@ -6,7 +6,7 @@ import numpy as np
 import imutils
 
 # Initialize the min and max HSV values
-hmin, smin, vmin = 0, 92, 0  # You can adjust these based on your preference
+hmin, smin, vmin = 0, 50, 50  # You can adjust these based on your preference
 hmax, smax, vmax = 179, 255, 255
 
 
@@ -36,9 +36,9 @@ def process_image(image_path):
     img_resized = cv2.resize(img, (640, 480))
     imgHSV = cv2.cvtColor(img_resized, cv2.COLOR_BGR2HSV)
 
-    color_controls()
+ #   color_controls()
 
-    for X in range(2):
+    for X in range(3):
         hmin = 0
         hmax = 179
         smin = 92
@@ -72,16 +72,20 @@ def process_image(image_path):
             # Load the input image and convert it to grayscale
             image = cv2.imread(image_path)
 
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            gray = cv2.cvtColor(img_largest_contour, cv2.COLOR_BGR2GRAY)
 
             # blur the image (to reduce false-positive detections) and then
             # perform edge detection
-            blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-            edged = cv2.Canny(blurred, 50, 130)
+            blurred = cv2.GaussianBlur(gray, (3, 3), 0)
+            edged = cv2.Canny(blurred, 50, 160)
 
-            cv2.imshow('Original', image)
+            res_image = cv2.resize(image, (800,600))
+            cv2.imshow('Original', res_image)
+
             # cv2.imshow('Blurred',blurred)
-            cv2.imshow('With contours', edged)
+            res_edged = cv2.resize(edged, (800, 600))
+            cv2.imshow('With contours', res_edged)
+
 
             largest_contour = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL,
                                                cv2.CHAIN_APPROX_SIMPLE)
