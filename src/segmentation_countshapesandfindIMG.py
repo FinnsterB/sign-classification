@@ -70,7 +70,7 @@ def process_image(image_path):
        #     cv2.waitKey(0)
 
             # Load the input image and convert it to grayscale
-            image = cv2.imread(image_path)
+            #image = cv2.imread(image_path)
 
             gray = cv2.cvtColor(img_largest_contour, cv2.COLOR_BGR2GRAY)
 
@@ -79,16 +79,15 @@ def process_image(image_path):
             blurred = cv2.GaussianBlur(gray, (3, 3), 0)
             edged = cv2.Canny(blurred, 50, 160)
 
-            res_image = cv2.resize(image, (800,600))
-            cv2.imshow('Original', res_image)
+           # res_image = cv2.resize(image, (800,600))
+           # cv2.imshow('Original', res_image)
 
             # cv2.imshow('Blurred',blurred)
             res_edged = cv2.resize(edged, (800, 600))
             cv2.imshow('With contours', res_edged)
 
 
-            largest_contour = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL,
-                                               cv2.CHAIN_APPROX_SIMPLE)
+            largest_contour = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             largest_contour = imutils.grab_contours(largest_contour)
 
             total = 0

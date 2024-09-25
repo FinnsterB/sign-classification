@@ -6,16 +6,15 @@ img_path = r'C:\Users\Blast\Desktop\Machine Learning\opecvtutorials\images\100si
 img = cv2.imread(img_path)
 
 # Load the input image and convert it to grayscale
-image = cv2.imread(img_path)
 
-gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
  # blur the image (to reduce false-positive detections) and then
  # perform edge detection
 blurred = cv2.GaussianBlur(gray, (9, 9), 0) # adjust this to get more accurate results
 edged = cv2.Canny(blurred, 50, 130)
 
-cv2.imshow('Original',image)
+cv2.imshow('Original',img)
 #cv2.imshow('Blurred',blurred)
 cv2.imshow('With contours',edged)
 
