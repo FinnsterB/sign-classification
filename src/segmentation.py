@@ -10,11 +10,10 @@ segmented_data_dir = "segmented_data"
 # Red HSV values
 hmin = 0
 hmax = 179
-smin = 92
+smin = 45
 smax = 255
-vmin = 0
+vmin = 205
 vmax = 255
-
 
 def remove_directory(directory_name):
     try:
