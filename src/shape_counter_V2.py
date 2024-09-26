@@ -1,3 +1,5 @@
+import sys
+
 import cv2
 import os
 import glob
@@ -99,10 +101,15 @@ def shape_counter(img_path):
     print("[INFO] Triangles: {}".format(total_triangles))
     print("[INFO] Rectangles: {}".format(total_rectangles))
 
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    k = cv2.waitKey(0) & 0xFF
+    if k == ord("q") or k == 27:
+        sys.exit()
 
-    
+    else:
+       # cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+
 
 if __name__ == "__main__":
     """ Test segmentation functions"""
