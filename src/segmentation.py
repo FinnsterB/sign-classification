@@ -1,19 +1,19 @@
 import cv2
 import numpy as np
 import os
-import sys
 import shutil
 
 data_dir = "dataset"
 segmented_data_dir = "segmented_data"
 
-# Red HSV values
-hmin = 0
-hmax = 179
-smin = 45
+# Green HSV values
+hmin = 27
+hmax = 80
+smin = 50
 smax = 255
-vmin = 205
+vmin = 0
 vmax = 255
+
 
 def remove_directory(directory_name):
     try:
@@ -50,39 +50,14 @@ def create_color_mask(image):
     return mask
 
 
-def create_largest_contour_mask(image, color_mask):
-    contours, _ = cv2.findContours(
-        color_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-    )
-
-    # IF no contours are found return empty mask
-    if len(contours) == 0:
-        print("WARNING: No contours found")
-        return np.zeros_like(image)
-
-    largest_contour = max(contours, key=cv2.contourArea)
-
-    contour_mask = np.zeros_like(image)
-
-    cv2.drawContours(
-        contour_mask,
-        [largest_contour],
-        -1,
-        (255, 255, 255),
-        thickness=cv2.FILLED,
-    )
-    return contour_mask
-
-
 def process_image(image_path):
     img = load_image(image_path)
     img_resized = cv2.resize(img, (640, 480))
     mask = create_color_mask(img_resized)
 
-    largest_contour_mask = create_largest_contour_mask(img_resized, mask)
-
-    img_largest_contour = cv2.bitwise_and(img_resized, largest_contour_mask)
-    return img_largest_contour
+    mask = cv2.bitwise_not(mask)
+    result = cv2.bitwise_and(img_resized, img_resized, mask=mask)
+    return result
 
 
 def segment_images(image_dir):

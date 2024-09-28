@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 
+# 27 80 0 255 0 255
+
 # Initialize the min and max HSV values
 hmin, smin, vmin = 0, 57, 60  # You can adjust these based on your preference
 hmax, smax, vmax = 179, 255, 255
@@ -32,11 +34,11 @@ def process_image(image_path):
     img_resized = cv2.resize(img, (640, 480))
     imgHSV = cv2.cvtColor(img_resized, cv2.COLOR_BGR2HSV)
 
-    hmin = 0
-    hmax = 179
-    smin = 92
-    smax = 255
-    vmin = 200
+    hmin = 119
+    hmax = 165
+    smin = 40
+    smax = 178
+    vmin = 68
     vmax = 255
 
     color_controls()
@@ -53,28 +55,11 @@ def process_image(image_path):
         upper = np.array([hmax, smax, vmax])
 
         mask = cv2.inRange(imgHSV, lower, upper)
+        mask = cv2.bitwise_not(mask)
         result = cv2.bitwise_and(img_resized, img_resized, mask=mask)
 
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-        if len(contours) > 0:
-            largest_contour = max(contours, key=cv2.contourArea)
-
-            mask_largest = np.zeros_like(img_resized)
-
-            cv2.drawContours(
-                mask_largest,
-                [largest_contour],
-                -1,
-                (255, 255, 255),
-                thickness=cv2.FILLED,
-            )
-
-            img_largest_contour = cv2.bitwise_and(img_resized, mask_largest)
-
-            cv2.imshow("Original Image", img_resized)
-            cv2.imshow("Masked Image", result)
-            cv2.imshow("Largest Contour Area", img_largest_contour)
+        cv2.imshow("Original Image", img_resized)
+        cv2.imshow("Masked Image", result)
 
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
@@ -82,6 +67,5 @@ def process_image(image_path):
     cv2.destroyAllWindows()
 
 
-image_path = "dataset/30/1727268780092351763.png"
-# image_path = "dataset/30/1727268767570896312.png"
+image_path = "dataset/60/1727344430767872426.png"
 process_image(image_path)
