@@ -60,6 +60,16 @@ def shape_counter(img_path):
             shape_type = "Triangle"
             total_triangles += 1
             color = colors['Triangle']
+
+        elif len(approx) > 4:
+            # Check if the contour is a circle
+            area = cv2.contourArea(c)
+            radius = perimeter / (2 * 3.14159)
+            circularity = area / (3.14159 * (radius ** 2))
+            if 0.7 <= circularity <= 1.2:
+                shape_type = "Circle"
+                total_circles += 1
+                color = colors['Circle']
         elif len(approx) == 4:
             # Check if the contour is a square or rectangle
             (x, y, w, h) = cv2.boundingRect(approx)
@@ -72,15 +82,7 @@ def shape_counter(img_path):
                 shape_type = "Rectangle"
                 total_rectangles += 1
                 color = colors['Rectangle']
-        elif len(approx) > 4:
-            # Check if the contour is a circle
-            area = cv2.contourArea(c)
-            radius = perimeter / (2 * 3.14159)
-            circularity = area / (3.14159 * (radius ** 2))
-            if 0.7 <= circularity <= 1.2:
-                shape_type = "Circle"
-                total_circles += 1
-                color = colors['Circle']
+
 
         # Draw the contour and label the shape
         cv2.drawContours(img, [c], -1, color, 2)
@@ -113,11 +115,11 @@ def shape_counter(img_path):
 
 if __name__ == "__main__":
     """ Test segmentation functions"""
-    data_path = r'C:\Users\Blast\Desktop\Machine Learning'
+    data_path = r'C:\Users\Blast\Desktop\Machine Learning\opecvtutorials\images'
 
     # grab the list of images in our data directory
     print("[INFO] loading images...")
-    p = os.path.sep.join([data_path, '**', '*.jpg'])
+    p = os.path.sep.join([data_path, '**', '*.png'])
 
     file_list = [f for f in glob.iglob(p, recursive=True) if (os.path.isfile(f))]
     print("[INFO] images found: {}".format(len(file_list)))
