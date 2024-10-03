@@ -38,7 +38,7 @@ def process_image(image_path):
 
  #   color_controls()
 
-    for X in range(3):
+    for X in range(1):
         hmin = 0
         hmax = 179
         smin = 92
@@ -67,7 +67,7 @@ def process_image(image_path):
             cv2.imshow("Masked Image", result)
             cv2.imshow("Largest Contour Area", img_largest_contour)
 
-       #     cv2.waitKey(0)
+            img_resized2 = img_resized
 
             # Load the input image and convert it to grayscale
             #image = cv2.imread(image_path)
@@ -76,32 +76,37 @@ def process_image(image_path):
 
             # blur the image (to reduce false-positive detections) and then
             # perform edge detection
-            blurred = cv2.GaussianBlur(gray, (3, 3), 0)
-            edged = cv2.Canny(blurred, 50, 160)
+            blurred = cv2.GaussianBlur(gray, (9, 9), 0)  # adjust this to get more accurate results
+            edged = cv2.Canny(blurred, 50, 130)
 
-           # res_image = cv2.resize(image, (800,600))
-           # cv2.imshow('Original', res_image)
-
+            #cv2.imshow('Original', img)
             # cv2.imshow('Blurred',blurred)
-            res_edged = cv2.resize(edged, (800, 600))
-            cv2.imshow('With contours', res_edged)
+            cv2.imshow('With contours', edged)
 
-
-            largest_contour = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            largest_contour = imutils.grab_contours(largest_contour)
-
+            # Find contours and hierarchy
+            # Get contours and hierarchy
+            edged, hierarchy = cv2.findContours(edged, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             total = 0
-            # loop over the contours one by one
-            for c in largest_contour:
-                # if the contour area is small, then the area is likely noise, so
-                # we should ignore the contour
+
+            # Loop over each contour
+            for i, c in enumerate(edged):
+                # Ignore small contours (noise)
                 if cv2.contourArea(c) < 25:
                     continue
 
-                # otherwise, draw the contour on the image and increment the total
-                # number of shapes found
-                cv2.drawContours(img, [c], -1, (204, 0, 255), 2)
+                # Use hierarchy to check if the contour is inside another contour
+                if hierarchy[0][i][3] == -1:  # Check if the contour has no parent (outer contour)
+                    # Draw the outer contour in one color
+                    cv2.drawContours(img_resized2, [c], -1, (204, 0, 255), 2)
+                else:
+                    # Draw inner contours in a different color (nested contours)
+                    cv2.drawContours(img_resized2, [c], -1, (0, 255, 0), 2)
+
                 total += 1
+
+            # Show the image with contours drawn
+            cv2.imshow('Drawn', img_resized2)
+
 
             #      cv2.imshow('Drawn', img)
             if cv2.waitKey(1) & 0xFF == ord('q'):

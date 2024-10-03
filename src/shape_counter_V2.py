@@ -102,7 +102,7 @@ def shape_counter(img_path):
     print("[INFO] Selected Image: {}".format(img_path))
     print()
     print("[INFO] Total shapes: {}".format(total_shapes))
-    print("[INFO] Circles: {}".format(total_circles))
+    print("[INFO] Circles: {}".format(total_circles/2))
     print("[INFO] Squares: {}".format(total_squares))
     print("[INFO] Triangles: {}".format(total_triangles))
     print("[INFO] Rectangles: {}".format(total_rectangles))
