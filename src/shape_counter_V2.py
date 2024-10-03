@@ -19,18 +19,18 @@ def shape_counter(img_path):
 
     # Convert the image to grayscale and blur to reduce noise
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    blurred = cv2.GaussianBlur(gray, (3, 3), 0)
 
     # Perform edge detection
-    edged = cv2.Canny(blurred, 50, 130)
+    edged = cv2.Canny(blurred, 50, 100)
 
     # Display original and edge-detected images
     #cv2.imshow('Original', img)
-    res_edged = imutils.resize(img, height=800)
-    cv2.imshow('With contours', res_edged)
 
     # Find contours
     contours, hierarchy = cv2.findContours(edged, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    res_edged = imutils.resize(img, height=500)
+    cv2.imshow('Original', res_edged)
 
     # Colors for different shapes
     colors = {
@@ -44,12 +44,12 @@ def shape_counter(img_path):
     # Loop over each contour
     for i, c in enumerate(contours):
         # Ignore small contours (noise)
-        if cv2.contourArea(c) < 25:
+        if cv2.contourArea(c) < 50:
             continue
 
         # Approximate the contour to reduce vertices
         perimeter = cv2.arcLength(c, True)
-        approx = cv2.approxPolyDP(c, 0.04 * perimeter, True)
+        approx = cv2.approxPolyDP(c, 0.0004 * perimeter, True)
 
         # Initialize the shape type and contour color
         shape_type = "Unknown"
@@ -66,7 +66,7 @@ def shape_counter(img_path):
             area = cv2.contourArea(c)
             radius = perimeter / (2 * 3.14159)
             circularity = area / (3.14159 * (radius ** 2))
-            if 0.7 <= circularity <= 1.2:
+            if 0.5 <= circularity <= 1.5:
                 shape_type = "Circle"
                 total_circles += 1
                 color = colors['Circle']
@@ -93,11 +93,14 @@ def shape_counter(img_path):
         total_shapes += 1
 
     # Show the image with contours drawn and labeled
-    res_img = imutils.resize(img, height=800)
+    res_img = imutils.resize(img, height=500)
     cv2.imshow('Classified Shapes', res_img)
 
     # Print total shapes found
 
+    print()
+    print("[INFO] Selected Image: {}".format(img_path))
+    print()
     print("[INFO] Total shapes: {}".format(total_shapes))
     print("[INFO] Circles: {}".format(total_circles))
     print("[INFO] Squares: {}".format(total_squares))
