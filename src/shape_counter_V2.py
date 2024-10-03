@@ -97,6 +97,7 @@ def shape_counter(img_path):
     cv2.imshow('Classified Shapes', res_img)
 
     # Print total shapes found
+
     print("[INFO] Total shapes: {}".format(total_shapes))
     print("[INFO] Circles: {}".format(total_circles))
     print("[INFO] Squares: {}".format(total_squares))
