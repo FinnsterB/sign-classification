@@ -97,44 +97,6 @@ def calculate_perimeter(image_path):
 
     return total_perimeter
 
-def detectCircleContoursWithColoredMask(image_path):
-    img = cv2.imread(image_path)
-    imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-
-    lower = np.array([55, 0, 0])
-    upper = np.array([126, 255, 180])
-    mask = cv2.inRange(imgHSV, lower, upper)  
-    result = cv2.bitwise_and(img, img, mask=mask) 
-
-    gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
-
-    blurred = cv2.GaussianBlur(gray, (9, 9), 2)
-    edges = cv2.Canny(blurred, 50, 150)
-
-    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    circle_mask = np.zeros_like(img)
-
-    for contour in contours:
-        area = cv2.contourArea(contour)
-        perimeter = cv2.arcLength(contour, True)
-
-        if perimeter == 0:
-            continue
-
-        circularity = 4 * np.pi * (area / (perimeter * perimeter))
-
-        if 0.4 < circularity < 2:
-            cv2.drawContours(circle_mask, [contour], -1, (0, 255, 0), thickness=cv2.FILLED)
-
-    combined_result = cv2.bitwise_and(result, circle_mask)
-
-    final_result = cv2.addWeighted(img, 0.7, circle_mask, 0.3, 0)
-
-    showImg("Detected Circles with Colored Mask", combined_result)
-
-    return final_result
-
 def harrisCornerDetection(image_path):
     img = cv2.imread(image_path)
     imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -180,7 +142,7 @@ def houghLines(image_path):
             cv2.line(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
     
 
-    showImg("Hough Lines on Original Image", img)
+    # showImg("Hough Lines on Original Image", img)
 
     return lines
 
@@ -206,7 +168,7 @@ def houghCircles(image_path):
             cv2.circle(img, (x, y), r, (0, 255, 0), 2)
             cv2.circle(img, (x, y), 2, (0, 0, 255), 3)
 
-    showImg("Hough Circles on Original Image", img)
+    # showImg("Hough Circles on Original Image", img)
 
     return circles
 
@@ -250,7 +212,7 @@ def process_image(image_path):
 
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        cv2.imshow("Masked Image", result)
+        # cv2.imshow("Masked Image", result)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
@@ -275,7 +237,7 @@ def find_circle(img_path):
     edged = cv2.Canny(blurred, 50, 130)
 
     res_edged = imutils.resize(img, height=800)
-    cv2.imshow('With contours', res_edged)
+    # cv2.imshow('With contours', res_edged)
 
     contours, hierarchy = cv2.findContours(edged, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -324,8 +286,11 @@ def find_circle(img_path):
     if k == ord("q") or k == 27:
         cv2.destroyAllWindows()
 
+    array_circles_and_unknown = [total_circles, total_uknowns]
+    return array_circles_and_unknown
+
 
 
 #There has to be images from the segmented data folder, you can get them through running the segmentation.py.
-image_path = 'segmented_data/60/1727344416248483528.png'
+image_path = 'segmented_data/120/1727344223625093954.png'
 find_circle(image_path)
