@@ -1,4 +1,4 @@
-/dataset/*/*.jpg
+/dataset/*/*.png
 /segmented_data
 
 # Byte-compiled / optimized / DLL files
