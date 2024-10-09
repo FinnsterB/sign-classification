@@ -1,84 +1,106 @@
 import cv2
 import numpy as np
+import os
+import shutil
 
-# Initialize the min and max HSV values
-hmin, smin, vmin = 0, 65, 0
-hmax, smax, vmax = 179, 255, 255
+data_dir = "dataset"
+segmented_data_dir = "segmented_data"
 
-def empty(a):
-    pass
+# Green HSV values
+hmin = 27
+hmax = 80
+smin = 20
+smax = 255
+vmin = 0
+vmax = 255
 
-def color_controls():
-    # Create a named window
-    cv2.namedWindow("Trackbars", cv2.WINDOW_NORMAL)
-    cv2.resizeWindow("Trackbars", 640, 200)
 
-    # Create trackbars for adjusting HSV values
-    cv2.createTrackbar("Hue Min", "Trackbars", hmin, 179, empty)
-    cv2.createTrackbar("Hue Max", "Trackbars", hmax, 179, empty)
-    cv2.createTrackbar("Sat Min", "Trackbars", smin, 255, empty)
-    cv2.createTrackbar("Sat Max", "Trackbars", smax, 255, empty)
-    cv2.createTrackbar("Val Min", "Trackbars", vmin, 255, empty)
-    cv2.createTrackbar("Val Max", "Trackbars", vmax, 255, empty)
+def remove_directory(directory_name):
+    try:
+        shutil.rmtree(directory_name)
+    except OSError as e:
+        print("Error: %s - %s." % (e.filename, e.strerror))
 
-def process_image(image_path):
-    # Load an image
+
+def load_image(image_path):
     img = cv2.imread(image_path)
     if img is None:
         print(f"Error: The image '{image_path}' could not be loaded.")
         return
-    img_resized = cv2.resize(img, (640, 480))  # Resize to 640x480 pixels
-    imgHSV = cv2.cvtColor(img_resized, cv2.COLOR_BGR2HSV)
-    
-    # Run the color control trackbars
-    color_controls()
+    return img
 
-    while True:
-        # Get trackbar positions
-        hmin = cv2.getTrackbarPos("Hue Min", "Trackbars")
-        hmax = cv2.getTrackbarPos("Hue Max", "Trackbars")
-        smin = cv2.getTrackbarPos("Sat Min", "Trackbars")
-        smax = cv2.getTrackbarPos("Sat Max", "Trackbars")
-        vmin = cv2.getTrackbarPos("Val Min", "Trackbars")
-        vmax = cv2.getTrackbarPos("Val Max", "Trackbars")
 
-        # Define HSV lower and upper bounds based on trackbar positions
-        lower = np.array([hmin, smin, vmin])
-        upper = np.array([hmax, smax, vmax])
+def save_image(image_path, image):
+    new_path = image_path.replace(data_dir, segmented_data_dir)
+    new_dir = os.path.dirname(new_path)
 
-        # Apply the mask to get only the colors within the defined HSV range
-        mask = cv2.inRange(imgHSV, lower, upper)
-        result = cv2.bitwise_and(img_resized, img_resized, mask=mask)
+    # Create the directory if it doesn't exist
+    if not os.path.exists(new_dir):
+        os.makedirs(new_dir)
+    cv2.imwrite(new_path, image)
+    print(new_path)
 
-        # Find contours from the mask
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        # Create a copy of the original image to draw filtered contours on
-        img_filtered_contours = img_resized.copy()
+def create_color_mask(image):
+    img_HSV = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    lower = np.array([hmin, smin, vmin])
+    upper = np.array([hmax, smax, vmax])
 
-        # Minimum and maximum area thresholds
-        min_area = 500  # Minimum contour area
-        max_area = 5000  # Maximum contour area
+    mask = cv2.inRange(img_HSV, lower, upper)
+    return mask
 
-        # Filter contours based on area
-        for contour in contours:
-            area = cv2.contourArea(contour)
-            if min_area < area < max_area:  # Keep only contours within the area range
-                x, y, w, h = cv2.boundingRect(contour)  # Get bounding rectangle
-                cv2.rectangle(img_filtered_contours, (x, y), (x + w, y + h), (0, 255, 0), 2)  # Draw rectangle
 
-        # Display the original, masked, and filtered contour images
-        cv2.imshow("Original Image", img_resized)
-        cv2.imshow("Masked Image", result)
-        cv2.imshow("Filtered Contours", img_filtered_contours)
+def find_largest_red_contour(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    edges = cv2.Canny(gray, 50, 150)
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if len(contours) == 0:
+        return None
+    largest_contour = max(contours, key=cv2.contourArea)
+    return largest_contour
 
-        # Break the loop if 'q' is pressed
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
 
-    # Close all windows
-    cv2.destroyAllWindows()
+def crop_image(image, largest_contour):
+    x, y, w, h = cv2.boundingRect(largest_contour)
+    cropped_image = image[y : y + h, x : x + w]
+    return cropped_image
 
-image_path = 'images/50/20240905_113847_098.jpg'
-process_image(image_path)
 
+def process_image(image_path):
+    img = load_image(image_path)
+    adjusted = cv2.convertScaleAbs(img, alpha=1.5, beta=10)
+    img_resized = cv2.resize(adjusted, (640, 480))
+    mask = create_color_mask(img_resized)
+
+    mask = cv2.bitwise_not(mask)
+    kernel = kernel = np.ones((50, 50), np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    image_without_background = cv2.bitwise_and(img_resized, img_resized, mask=mask)
+    largest_contour = find_largest_red_contour(image_without_background)
+    # If no contour is found return a black image
+    if largest_contour is None:
+        height, width, channels = img_resized.shape
+        return np.zeros((height, width, channels), dtype=np.uint8)
+    cropped_result = crop_image(image_without_background, largest_contour)
+    return cropped_result
+
+
+def is_image_blank(image):
+    return np.all(image == image[0, 0])
+
+
+def segment_images(image_dir):
+    for entry in os.listdir(image_dir):
+        path = os.path.join(image_dir, entry)
+        if os.path.isdir(path):
+            segment_images(path)
+        else:
+            if os.path.basename(path) != ".gitkeep":
+                processed_image = process_image(path)
+                if not is_image_blank(processed_image):
+                    save_image(path, processed_image)
+
+
+if __name__ == "__main__":
+    remove_directory(segmented_data_dir)
+    segment_images(data_dir)
