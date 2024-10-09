@@ -9,7 +9,7 @@ segmented_data_dir = "segmented_data"
 # Green HSV values
 hmin = 27
 hmax = 80
-smin = 50
+smin = 20
 smax = 255
 vmin = 0
 vmax = 255
@@ -50,14 +50,43 @@ def create_color_mask(image):
     return mask
 
 
+def find_largest_red_contour(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    edges = cv2.Canny(gray, 50, 150)
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if len(contours) == 0:
+        return None
+    largest_contour = max(contours, key=cv2.contourArea)
+    return largest_contour
+
+
+def crop_image(image, largest_contour):
+    x, y, w, h = cv2.boundingRect(largest_contour)
+    cropped_image = image[y : y + h, x : x + w]
+    return cropped_image
+
+
 def process_image(image_path):
     img = load_image(image_path)
-    img_resized = cv2.resize(img, (640, 480))
+    adjusted = cv2.convertScaleAbs(img, alpha=1.5, beta=10)
+    img_resized = cv2.resize(adjusted, (640, 480))
     mask = create_color_mask(img_resized)
 
     mask = cv2.bitwise_not(mask)
-    result = cv2.bitwise_and(img_resized, img_resized, mask=mask)
-    return result
+    kernel = kernel = np.ones((50, 50), np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    image_without_background = cv2.bitwise_and(img_resized, img_resized, mask=mask)
+    largest_contour = find_largest_red_contour(image_without_background)
+    # If no contour is found return a black image
+    if largest_contour is None:
+        height, width, channels = img_resized.shape
+        return np.zeros((height, width, channels), dtype=np.uint8)
+    cropped_result = crop_image(image_without_background, largest_contour)
+    return cropped_result
+
+
+def is_image_blank(image):
+    return np.all(image == image[0, 0])
 
 
 def segment_images(image_dir):
@@ -68,7 +97,8 @@ def segment_images(image_dir):
         else:
             if os.path.basename(path) != ".gitkeep":
                 processed_image = process_image(path)
-                save_image(path, processed_image)
+                if not is_image_blank(processed_image):
+                    save_image(path, processed_image)
 
 
 if __name__ == "__main__":
