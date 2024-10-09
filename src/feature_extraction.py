@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import imutils
 
 # Initialize the min and max HSV values
 hmin, smin, vmin = 55, 0, 0  # You can adjust these based on your preference
@@ -132,7 +133,6 @@ def detectCircleContoursWithColoredMask(image_path):
 
     showImg("Detected Circles with Colored Mask", combined_result)
 
-    # Return the final result
     return final_result
 
 def harrisCornerDetection(image_path):
@@ -146,7 +146,7 @@ def harrisCornerDetection(image_path):
 
     gray = cv2.cvtColor(masked_img, cv2.COLOR_BGR2GRAY)
 
-    gray = np.float32(gray)  # Harris corner detection requires float32 input
+    gray = np.float32(gray)
     corners = cv2.cornerHarris(gray, blockSize=2, ksize=3, k=0.18)
 
     corners = cv2.dilate(corners, None)
@@ -210,51 +210,13 @@ def houghCircles(image_path):
 
     return circles
 
-def correct_perspective(image_path, output_width=400, output_height=400):
-
-    image = cv2.imread(image_path)
-
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    edges = cv2.Canny(gray, 50, 150)
-
-    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    if len(contours) == 0:
-        raise ValueError("No contours found in the image.")
-
-    contour = max(contours, key=cv2.contourArea)
-
-    epsilon = 0.02 * cv2.arcLength(contour, True)
-    approx = cv2.approxPolyDP(contour, epsilon, True)
-
-    if len(approx) == 4:
-        pts = np.float32([point[0] for point in approx])
-        
-        dst_pts = np.float32([[0, 0], [output_width - 1, 0], 
-                              [output_width - 1, output_height - 1], [0, output_height - 1]])
-
-        matrix = cv2.getPerspectiveTransform(pts, dst_pts)
-
-        warped = cv2.warpPerspective(image, matrix, (output_width, output_height))
-        cv2.imshow("warped correct", warped)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows
-
-        return warped
-    else:
-        raise ValueError("Could not find a rectangular contour for perspective correction.")
-
-
 def empty(a):
     pass
 
 def color_controls():
-    # Create a named window
     cv2.namedWindow("Trackbars", cv2.WINDOW_NORMAL)
     cv2.resizeWindow("Trackbars", 640, 200)
 
-    # Create trackbars for adjusting HSV values
     cv2.createTrackbar("Hue Min", "Trackbars", hmin, 179, empty)
     cv2.createTrackbar("Hue Max", "Trackbars", hmax, 179, empty)
     cv2.createTrackbar("Sat Min", "Trackbars", smin, 255, empty)
@@ -295,18 +257,75 @@ def process_image(image_path):
 
     cv2.destroyAllWindows()
 
-# image_path = 'segmented_data/30/1727344478038639233.png'
-# image_path = 'segmented_data/100/1727344309657454692.png'
-# image_path = 'segmented_data/80/1727344354376448128.png'
-image_path = 'segmented_data/60/1727344451399355021.png'
-# image_path = 'segmented_data/120/1727344541136082784.png'
-# process_image(image_path)
-# convuxHullPoints = convexHull(image_path)
-# linePoints = houghLines(image_path)
-# correct_perspective(image_path)
-# calculate_perimeter(image_path)
-# harrisCornerDetection(image_path)
-# circlePoints = houghCircles(image_path)
-detectCircleContoursWithColoredMask(image_path)
+def find_circle(img_path):
+    total_shapes = 0
+    total_circles = 0
+    total_uknowns = 0
+    img = cv2.imread(img_path)
+    imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-# getContourProximityRatio(image_path, 240)
+    lower = np.array([55, 0, 0])
+    upper = np.array([126, 255, 180])
+    mask = cv2.inRange(imgHSV, lower, upper)
+    result = cv2.bitwise_and(img, img, mask=mask)
+
+    gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+
+    edged = cv2.Canny(blurred, 50, 130)
+
+    res_edged = imutils.resize(img, height=800)
+    cv2.imshow('With contours', res_edged)
+
+    contours, hierarchy = cv2.findContours(edged, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Colors for different shapes
+    colors = {
+        'Circle': (0, 255, 0),
+        'Unknown': (0, 0, 255)
+    }
+
+    for i, c in enumerate(contours):
+        if cv2.contourArea(c) < 50:
+            continue
+        perimeter = cv2.arcLength(c, True)
+        approx = cv2.approxPolyDP(c, 0.00004 * perimeter, True)
+
+        shape_type = "Unknown"
+        color = colors['Unknown']
+
+        if len(approx) > 4:
+            area = cv2.contourArea(c)
+            radius = perimeter / (2 * 3.14159)
+            circularity = area / (3.14159 * (radius ** 2))
+            if 0.5 <= circularity <= 1.5:
+                shape_type = "Circle"
+                total_circles += 1
+                color = colors['Circle']
+            else:
+                shape_type = "Unknown"
+                total_uknowns += 1
+                color = colors['Unknown']
+
+        cv2.drawContours(result, [c], -1, color, 2)
+        x, y, w, h = cv2.boundingRect(c)
+        cv2.putText(result, shape_type, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+
+        total_shapes += 1
+
+    res_img = imutils.resize(result, height=800)
+    cv2.imshow('Classified Shapes', res_img)
+
+    print("[INFO] Total shapes: {}".format(total_shapes))
+    print("[INFO] Circles: {}".format(total_circles / 2))
+    print("[INFO] Uknowns: {}".format(total_uknowns / 2))
+
+    k = cv2.waitKey(0) & 0xFF
+    if k == ord("q") or k == 27:
+        cv2.destroyAllWindows()
+
+
+
+#There has to be images from the segmented data folder, you can get them through running the segmentation.py.
+image_path = 'segmented_data/80/1727344367144939979.png'
+find_circle(image_path)
