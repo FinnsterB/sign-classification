@@ -188,8 +188,8 @@ def houghCircles(image_path):
     img = cv2.imread(image_path)
     imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-    lower = np.array([55, 0, 0])
-    upper = np.array([126, 255, 180])
+    lower = np.array([0, 0, 136])
+    upper = np.array([147, 45, 216])
     mask = cv2.inRange(imgHSV, lower, upper)
     result = cv2.bitwise_and(img, img, mask=mask)
 
@@ -264,8 +264,8 @@ def find_circle(img_path):
     img = cv2.imread(img_path)
     imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-    lower = np.array([55, 0, 0])
-    upper = np.array([126, 255, 180])
+    lower = np.array([67, 0, 140])
+    upper = np.array([130, 255, 255])
     mask = cv2.inRange(imgHSV, lower, upper)
     result = cv2.bitwise_and(img, img, mask=mask)
 
@@ -327,5 +327,5 @@ def find_circle(img_path):
 
 
 #There has to be images from the segmented data folder, you can get them through running the segmentation.py.
-image_path = 'segmented_data/80/1727344367144939979.png'
+image_path = 'segmented_data/60/1727344416248483528.png'
 find_circle(image_path)
