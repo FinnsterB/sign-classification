@@ -304,17 +304,17 @@ plt.show()
 # Create boxplot for the first feature, grouped by labels
 plt.figure(figsize=(8, 6))
 sns.boxplot(x='Label', y='Feature 3', data=df)
-plt.title('Boxplot of Perimiter Grouped by Labels')
+plt.title('Boxplot of Circles Grouped by Labels')
 plt.show()
 
 # Create boxplot for the first feature, grouped by labels
 plt.figure(figsize=(8, 6))
 sns.boxplot(x='Label', y='Feature 4', data=df)
-plt.title('Boxplot of Perimiter Grouped by Labels')
+plt.title('Boxplot of Unknowns Grouped by Labels')
 plt.show()
 
 # Create boxplot for the first feature, grouped by labels
 plt.figure(figsize=(8, 6))
 sns.boxplot(x='Label', y='Feature 5', data=df)
-plt.title('Boxplot of Perimiter Grouped by Labels')
+plt.title('Boxplot of Total Grouped by Labels')
 plt.show()
