@@ -47,7 +47,7 @@ def find_circle_mask(image):
     return mask_circle, (x, y, radius)
 
 
-def calculate_black_white_ratio(image, mask_circle):
+def calculate_black_white_areas(image, mask_circle):
     # Convert the image to grayscale
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -61,12 +61,8 @@ def calculate_black_white_ratio(image, mask_circle):
     white_pixels = np.sum(thresh == 255)
     black_pixels = np.sum(thresh == 0)
 
-    # Compute the black-to-white ratio
-    if white_pixels == 0:
-        return None  # Avoid division by zero
-    ratio = black_pixels / white_pixels
-
-    return ratio
+    # Return the black and white areas
+    return black_pixels, white_pixels
 
 
 def process_image(image_path):
@@ -78,17 +74,18 @@ def process_image(image_path):
     # Find the circular mask
     mask_circle, circle_info = find_circle_mask(image)
 
-    # Calculate the black-to-white ratio inside the circle
-    ratio = calculate_black_white_ratio(image, mask_circle)
+    # Calculate the black and white areas inside the circle
+    black_pixels, white_pixels = calculate_black_white_areas(image, mask_circle)
 
-    if ratio is None:
-        raise ValueError(f"Could not calculate black-white ratio for image {image_path}. No white area detected.")
+    if white_pixels == 0 and black_pixels == 0:
+        raise ValueError(f"Could not calculate black-white areas for image {image_path}. No area detected.")
 
-    return ratio
+    return black_pixels, white_pixels
 
 
 def load_and_process_images(data_directory, max_retries=5, timeout=1):
-    ratios = []
+    black_areas = []
+    white_areas = []
     labels = []
 
     # Get all subdirectories (these are the labels)
@@ -111,10 +108,11 @@ def load_and_process_images(data_directory, max_retries=5, timeout=1):
                     try:
                         # Try processing the image with timeout
                         future = executor.submit(process_image, image_path)
-                        ratio = future.result(timeout=timeout)
+                        black_pixels, white_pixels = future.result(timeout=timeout)
 
-                        # Add the ratio and label to the dataset
-                        ratios.append(ratio)
+                        # Add the areas and label to the dataset
+                        black_areas.append(black_pixels)
+                        white_areas.append(white_pixels)
                         labels.append(label)
 
                         success = True
@@ -130,34 +128,45 @@ def load_and_process_images(data_directory, max_retries=5, timeout=1):
                     # If all attempts failed, log the error and move to the next image
                     print(f"[ERROR] Failed to process image {image_path} after {max_retries} attempts. Skipping.")
 
-    return ratios, labels
+    return black_areas, white_areas, labels
 
 
-def remove_outliers(ratios, labels):
+def remove_outliers(black_areas, white_areas, labels, sensitivity=2.5):
     # Convert to numpy arrays
-    ratios = np.array(ratios)
+    black_areas = np.array(black_areas)
+    white_areas = np.array(white_areas)
     labels = np.array(labels)
 
     # Calculate the IQR (Interquartile Range)
-    Q1 = np.percentile(ratios, 25)
-    Q3 = np.percentile(ratios, 75)
-    IQR = Q3 - Q1
+    Q1_black = np.percentile(black_areas, 25)
+    Q3_black = np.percentile(black_areas, 75)
+    IQR_black = Q3_black - Q1_black
 
-    # Define bounds for outliers
-    lower_bound = Q1 - 1.5 * IQR
-    upper_bound = Q3 + 1.5 * IQR
+    Q1_white = np.percentile(white_areas, 25)
+    Q3_white = np.percentile(white_areas, 75)
+    IQR_white = Q3_white - Q1_white
 
-    # Filter the ratios and labels to remove outliers
-    valid_indices = np.where((ratios >= lower_bound) & (ratios <= upper_bound))
-    filtered_ratios = ratios[valid_indices]
+    # Define bounds for outliers using less sensitivity (2.5 times IQR)
+    lower_bound_black = Q1_black - sensitivity * IQR_black
+    upper_bound_black = Q3_black + sensitivity * IQR_black
+
+    lower_bound_white = Q1_white - sensitivity * IQR_white
+    upper_bound_white = Q3_white + sensitivity * IQR_white
+
+    # Filter the black and white areas to remove outliers
+    valid_indices = np.where((black_areas >= lower_bound_black) & (black_areas <= upper_bound_black) &
+                             (white_areas >= lower_bound_white) & (white_areas <= upper_bound_white))
+
+    filtered_black_areas = black_areas[valid_indices]
+    filtered_white_areas = white_areas[valid_indices]
     filtered_labels = labels[valid_indices]
 
-    return filtered_ratios, filtered_labels
+    return filtered_black_areas, filtered_white_areas, filtered_labels
 
 
-def plot_results(ratios, labels):
-    # Remove outliers before plotting
-    ratios, labels = remove_outliers(ratios, labels)
+def plot_results(black_areas, white_areas, labels):
+    # Remove outliers before plotting (less sensitive outlier detection)
+    black_areas, white_areas, labels = remove_outliers(black_areas, white_areas, labels)
 
     # Create subplots: one for scatter plot, one for box plot
     fig, ax = plt.subplots(2, 1, figsize=(10, 10))
@@ -166,27 +175,31 @@ def plot_results(ratios, labels):
     label_dict = {label: i for i, label in enumerate(set(labels))}
     numeric_labels = [label_dict[label] for label in labels]
 
-    # Scatter plot of black-to-white ratios
-    ax[0].scatter(numeric_labels, ratios, c=numeric_labels, cmap='rainbow', s=100, edgecolor='k', alpha=0.75)
-    ax[0].set_title("Black-to-White Area Ratio Inside Circular Signs (Scatter)")
-    ax[0].set_xlabel("Labels")
-    ax[0].set_ylabel("Black-to-White Ratio")
-    ax[0].set_xticks(ticks=range(len(label_dict)))
-    ax[0].set_xticklabels(label_dict.keys(), rotation=45)
+    # Scatter plot (Black on X, White on Y)
+    scatter = ax[0].scatter(black_areas, white_areas, c=numeric_labels, cmap='rainbow', s=100, edgecolor='k',
+                            alpha=0.75)
+    ax[0].set_title("Black vs. White Area Inside Circular Signs (Scatter Plot)")
+    ax[0].set_xlabel("Black Area (pixels)")
+    ax[0].set_ylabel("White Area (pixels)")
+    legend1 = ax[0].legend(*scatter.legend_elements(), title="Labels")
+    ax[0].add_artist(legend1)
 
-    # Box plot of black-to-white ratios
+    # Box plot of black areas
     unique_labels = sorted(set(labels))
-    data_by_label = [[ratios[i] for i in range(len(labels)) if labels[i] == label] for label in unique_labels]
+    black_data_by_label = [[black_areas[i] for i in range(len(labels)) if labels[i] == label] for label in
+                           unique_labels]
+    white_data_by_label = [[white_areas[i] for i in range(len(labels)) if labels[i] == label] for label in
+                           unique_labels]
 
-    ax[1].boxplot(data_by_label, labels=unique_labels)
-    ax[1].set_title("Black-to-White Area Ratio Inside Circular Signs (Box Plot)")
+    ax[1].boxplot(black_data_by_label, labels=unique_labels)
+    ax[1].set_title("Distribution of Black Area by Label (Box Plot)")
     ax[1].set_xlabel("Labels")
-    ax[1].set_ylabel("Black-to-White Ratio")
+    ax[1].set_ylabel("Black Area (pixels)")
 
     # Save the plot
     plt.tight_layout()
-    plt.savefig("black_white_ratio_plots.png")
-    print("Plot saved as 'black_white_ratio_plots.png'")
+    plt.savefig("black_white_scatter_boxplot.png")
+    print("Plot saved as 'black_white_scatter_boxplot.png'")
 
     # Show the plot
     plt.show()
@@ -194,10 +207,10 @@ def plot_results(ratios, labels):
 
 def main():
     data_directory = r'C:\Users\Blast\Desktop\Machine Learning\segmented_dataset'  # Update this to your folder
-    ratios, labels = load_and_process_images(data_directory)
+    black_areas, white_areas, labels = load_and_process_images(data_directory)
 
     # Plot the results
-    plot_results(ratios, labels)
+    plot_results(black_areas, white_areas, labels)
 
 
 if __name__ == "__main__":
