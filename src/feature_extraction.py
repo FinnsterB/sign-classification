@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import imutils
+import seaborn as sns
 import os
 
 # Initialize the min and max HSV values
@@ -199,20 +200,14 @@ def find_circle(img_path):
 
     lower = np.array([67, 0, 140])
     upper = np.array([130, 255, 255])
-    mask = cv2.inRange(imgHSV, lower, upper)
+    mask = cv2.inRange(imgHSV, LOWER, UPPER)
     result = cv2.bitwise_and(img, img, mask=mask)
 
     gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
     edged = cv2.Canny(blurred, 50, 130)
-
-    res_edged = imutils.resize(img, height=800)
-    # cv2.imshow('With contours', res_edged)
-
-    contours, hierarchy = cv2.findContours(
-        edged, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
-    )
+    contours, _ = cv2.findContours(edged, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     # Colors for different shapes
     colors = {"Circle": (0, 255, 0), "Unknown": (0, 0, 255)}
@@ -240,26 +235,14 @@ def find_circle(img_path):
                 color = colors["Unknown"]
 
         cv2.drawContours(result, [c], -1, color, 2)
-        x, y, w, h = cv2.boundingRect(c)
+        x, y, _, _ = cv2.boundingRect(c)
         cv2.putText(
             result, shape_type, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2
         )
 
         total_shapes += 1
 
-    res_img = imutils.resize(result, height=800)
-    cv2.imshow("Classified Shapes", res_img)
-
-    print("[INFO] Total shapes: {}".format(total_shapes))
-    print("[INFO] Circles: {}".format(total_circles / 2))
-    print("[INFO] Uknowns: {}".format(total_uknowns / 2))
-
-    k = cv2.waitKey(0) & 0xFF
-    if k == ord("q") or k == 27:
-        cv2.destroyAllWindows()
-
-    array_circles_and_unknown = [total_circles, total_uknowns]
-    return array_circles_and_unknown
+    return total_circles, total_uknowns, total_shapes
 
 
 def get_features(image_path):
@@ -267,9 +250,10 @@ def get_features(image_path):
     features.append(numberOfDigits(image_path))
     # features.append(harrisCornerDetection(image_path))
     features.append(calculate_perimeter(image_path))
-    # shapes = find_circle(image_path)
-    # features.append(shapes[0])
-    # features.append(shapes[1])
+    circles, unkowns, total = find_circle(image_path)
+    features.append(circles)
+    features.append(unkowns)
+    features.append(total)
     # features.append(houghLines(image_path))
     return features
 
@@ -296,4 +280,4 @@ for i in x:
     length += len(i)
 print(length)
 print(x)
-# print(y)
+print(y)
