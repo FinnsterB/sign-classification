@@ -283,7 +283,7 @@ print(x)
 # print(y)
 
 # Convert to DataFrame
-df = pd.DataFrame(x, columns=['Feature 1', 'Feature 2'])
+df = pd.DataFrame(x, columns=['Feature 1', 'Feature 2', 'Feature 3', 'Feature 4', 'Feature 5'])
 df['Label'] = y
 
 # Melt the DataFrame for easier plotting
@@ -298,5 +298,23 @@ plt.show()
 # Create boxplot for the first feature, grouped by labels
 plt.figure(figsize=(8, 6))
 sns.boxplot(x='Label', y='Feature 2', data=df)
+plt.title('Boxplot of Perimiter Grouped by Labels')
+plt.show()
+
+# Create boxplot for the first feature, grouped by labels
+plt.figure(figsize=(8, 6))
+sns.boxplot(x='Label', y='Feature 3', data=df)
+plt.title('Boxplot of Perimiter Grouped by Labels')
+plt.show()
+
+# Create boxplot for the first feature, grouped by labels
+plt.figure(figsize=(8, 6))
+sns.boxplot(x='Label', y='Feature 4', data=df)
+plt.title('Boxplot of Perimiter Grouped by Labels')
+plt.show()
+
+# Create boxplot for the first feature, grouped by labels
+plt.figure(figsize=(8, 6))
+sns.boxplot(x='Label', y='Feature 5', data=df)
 plt.title('Boxplot of Perimiter Grouped by Labels')
 plt.show()
