@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import imutils
 import os
+import pandas as pd
+import seaborn as sns
 
 # Initialize the min and max HSV values
 hmin, smin, vmin = 55, 0, 0  # You can adjust these based on your preference
@@ -297,3 +299,22 @@ for i in x:
 print(length)
 print(x)
 # print(y)
+
+# Convert to DataFrame
+df = pd.DataFrame(x, columns=['Feature 1', 'Feature 2'])
+df['Label'] = y
+
+# Melt the DataFrame for easier plotting
+df_melted = pd.melt(df, id_vars='Label', var_name='Feature', value_name='Value')
+
+# Create boxplot for the first feature, grouped by labels
+plt.figure(figsize=(8, 6))
+sns.boxplot(x='Label', y='Feature 1', data=df)
+plt.title('Boxplot of Amount of Digits Grouped by Labels')
+plt.show()
+
+# Create boxplot for the first feature, grouped by labels
+plt.figure(figsize=(8, 6))
+sns.boxplot(x='Label', y='Feature 2', data=df)
+plt.title('Boxplot of Perimiter Grouped by Labels')
+plt.show()
