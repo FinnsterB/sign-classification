@@ -38,8 +38,6 @@ def calculate_perimeter(image_path):
     img = cv2.imread(image_path)
     imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-    lower = np.array([55, 0, 0])
-    upper = np.array([126, 255, 180])
     mask = cv2.inRange(imgHSV, LOWER, UPPER)
     result = cv2.bitwise_and(img, img, mask=mask)
 
