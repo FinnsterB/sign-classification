@@ -293,25 +293,25 @@ df_melted = pd.melt(df, id_vars='Label', var_name='Feature', value_name='Value')
 plt.figure(figsize=(8, 6))
 sns.boxplot(x='Label', y='Feature 1', data=df)
 plt.title('Boxplot of Amount of Digits Grouped by Labels')
-plt.show()
+
 
 # Create boxplot for the first feature, grouped by labels
 plt.figure(figsize=(8, 6))
 sns.boxplot(x='Label', y='Feature 2', data=df)
 plt.title('Boxplot of Perimiter Grouped by Labels')
-plt.show()
+
 
 # Create boxplot for the first feature, grouped by labels
 plt.figure(figsize=(8, 6))
 sns.boxplot(x='Label', y='Feature 3', data=df)
 plt.title('Boxplot of Circles Grouped by Labels')
-plt.show()
+
 
 # Create boxplot for the first feature, grouped by labels
 plt.figure(figsize=(8, 6))
 sns.boxplot(x='Label', y='Feature 4', data=df)
 plt.title('Boxplot of Unknowns Grouped by Labels')
-plt.show()
+
 
 # Create boxplot for the first feature, grouped by labels
 plt.figure(figsize=(8, 6))
