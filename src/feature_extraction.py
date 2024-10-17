@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-import imutils
 import seaborn as sns
 import os
 import pandas as pd
@@ -24,9 +23,6 @@ def showImg(window_name, img):
 def numberOfDigits(image_path):
     img = cv2.imread(image_path)
     imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-
-    lower = np.array([55, 0, 0])
-    upper = np.array([126, 255, 180])
     mask = cv2.inRange(imgHSV, LOWER, UPPER)
 
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -283,38 +279,87 @@ print(x)
 # print(y)
 
 # Convert to DataFrame
-df = pd.DataFrame(x, columns=['Feature 1', 'Feature 2', 'Feature 3', 'Feature 4', 'Feature 5'])
-df['Label'] = y
+df = pd.DataFrame(
+    x, columns=["Feature 1", "Feature 2", "Feature 3", "Feature 4", "Feature 5"]
+)
+df["Label"] = y
 
 # Melt the DataFrame for easier plotting
-df_melted = pd.melt(df, id_vars='Label', var_name='Feature', value_name='Value')
+df_melted = pd.melt(df, id_vars="Label", var_name="Feature", value_name="Value")
 
 # Create boxplot for the first feature, grouped by labels
 plt.figure(figsize=(8, 6))
-sns.boxplot(x='Label', y='Feature 1', data=df)
-plt.title('Boxplot of Amount of Digits Grouped by Labels')
+sns.boxplot(x="Label", y="Feature 1", data=df)
+plt.title("Boxplot of Amount of Digits Grouped by Labels")
 plt.show()
 
 # Create boxplot for the first feature, grouped by labels
 plt.figure(figsize=(8, 6))
-sns.boxplot(x='Label', y='Feature 2', data=df)
-plt.title('Boxplot of Perimiter Grouped by Labels')
+sns.boxplot(x="Label", y="Feature 2", data=df)
+plt.title("Boxplot of Perimiter Grouped by Labels")
 plt.show()
 
 # Create boxplot for the first feature, grouped by labels
 plt.figure(figsize=(8, 6))
-sns.boxplot(x='Label', y='Feature 3', data=df)
-plt.title('Boxplot of Perimiter Grouped by Labels')
+sns.boxplot(x="Label", y="Feature 3", data=df)
+plt.title("Boxplot of Perimiter Grouped by Labels")
 plt.show()
 
 # Create boxplot for the first feature, grouped by labels
 plt.figure(figsize=(8, 6))
-sns.boxplot(x='Label', y='Feature 4', data=df)
-plt.title('Boxplot of Perimiter Grouped by Labels')
+sns.boxplot(x="Label", y="Feature 4", data=df)
+plt.title("Boxplot of Perimiter Grouped by Labels")
 plt.show()
 
 # Create boxplot for the first feature, grouped by labels
 plt.figure(figsize=(8, 6))
-sns.boxplot(x='Label', y='Feature 5', data=df)
-plt.title('Boxplot of Perimiter Grouped by Labels')
+sns.boxplot(x="Label", y="Feature 5", data=df)
+plt.title("Boxplot of Perimiter Grouped by Labels")
 plt.show()
+
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+features = np.array(x)
+
+labels = np.array(y)  # Assuming two classes (100 and 50)
+
+# Step 2: Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(
+    features, labels, test_size=0.4, random_state=42
+)
+
+# Step 3: Choose a classifier (RandomForest in this case)
+clf = RandomForestClassifier()
+
+# Step 4: Train the classifier
+clf.fit(X_train, y_train)
+
+# Step 5: Make predictions and evaluate the classifier
+y_pred = clf.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+
+# Step 6: Generate the confusion matrix
+conf_matrix = confusion_matrix(y_test, y_pred)
+
+# Step 7: Display the confusion matrix using a heatmap for better visualization
+plt.figure(figsize=(6, 4))
+sns.heatmap(
+    conf_matrix,
+    annot=True,
+    fmt="d",
+    cmap="Blues",
+    xticklabels=np.unique(labels),
+    yticklabels=np.unique(labels),
+)
+plt.ylabel("True Label")
+plt.xlabel("Predicted Label")
+plt.title("Confusion Matrix")
+plt.show()
+
+# Optional: Classification report for more detailed analysis
+print("Classification Report:")
+print(classification_report(y_test, y_pred))
