@@ -1,5 +1,6 @@
 /dataset/*/*.png
 /segmented_data
+/feature_plots
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
