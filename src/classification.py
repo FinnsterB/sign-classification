@@ -12,6 +12,7 @@ import os
 import pandas as pdq
 import seaborn as sns
 from sklearn.neighbors import KNeighborsClassifier
+import pickle
 
 x, y = get_all_features("segmented_data")
 length = 0
@@ -23,25 +24,31 @@ print(x)
 features = np.array(x)
 labels = np.array(y)  # Assuming two classes (100 and 50)
 
-# Step 2: Split the data into training and testing sets
+# Split the data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(
     features, labels, test_size=0.4, random_state=42
 )
 
-# Step 3: Choose a classifier (RandomForest in this case)
+# Choose a classifier (RandomForest in this case)
 clf = RandomForestClassifier()
 
-# Step 4: Train the classifier
-clf.fit(X_train, y_train)
+# Train the classifier if there's no pre-trained one available
+if os.path.exists("clf.pkl"):
+    with open("clf.pkl", 'rb') as file:
+        clf = pickle.load(file)
+else:
+    clf.fit(X_train, y_train)
+    with open("clf.pkl", 'wb') as file:
+        pickle.dump(clf, file)
 
-# Step 5: Make predictions and evaluate the classifier
+# Make predictions and evaluate the classifier
 y_pred = clf.predict(X_test)
 accuracy = accuracy_score(y_test, y_pred)
 
-# Step 6: Generate the confusion matrix
+# Generate the confusion matrix
 conf_matrix = confusion_matrix(y_test, y_pred)
 
-# Step 7: Display the confusion matrix using a heatmap for better visualization
+# Display the confusion matrix using a heatmap for better visualization
 plt.figure(figsize=(6, 4))
 sns.heatmap(
     conf_matrix,
@@ -61,13 +68,22 @@ print("Classification Report:")
 print(classification_report(y_test, y_pred))
 
 clf_svc = SVC(kernel="linear")
-clf_svc.fit(x, y)
+
+# Train the classifier if there's no pre-trained one available
+if os.path.exists("clf_svc.pkl"):
+    with open("clf_svc.pkl", 'rb') as file:
+        clf_svc = pickle.load(file)
+else:
+    clf_svc.fit(X_train, y_train)
+    with open("clf_svc.pkl", 'wb') as file:
+        pickle.dump(clf_svc, file)
+
 y_pred_svc = clf_svc.predict(X_test)
 accuracy_svc = accuracy_score(y_test, y_pred_svc)
 
 conf_matrix = confusion_matrix(y_test, y_pred_svc)
 
-# Step 7: Display the confusion matrix using a heatmap for better visualization
+# Display the confusion matrix using a heatmap for better visualization
 plt.figure(figsize=(6, 4))
 sns.heatmap(
     conf_matrix,
@@ -87,14 +103,22 @@ print(classification_report(y_test, y_pred_svc))
 
 clf_neighbor = KNeighborsClassifier(n_neighbors=5)
 
-clf_neighbor.fit(X_train, y_train)
+# Train the classifier if there's no pre-trained one available
+if os.path.exists("clf_neighbor.pkl"):
+    with open("clf_neighbor.pkl", 'rb') as file:
+        clf_neighbor = pickle.load(file)
+else:
+    clf_neighbor.fit(X_train, y_train)
+    with open("clf_neighbor.pkl", 'wb') as file:
+        pickle.dump(clf_neighbor, file)
+
 
 y_pred_neighbor = clf_neighbor.predict(X_test)
 accuracy_neighbor = accuracy_score(y_test, y_pred_neighbor)
 
 conf_matrix = confusion_matrix(y_test, y_pred_neighbor)
 
-# Step 7: Display the confusion matrix using a heatmap for better visualization
+# Display the confusion matrix using a heatmap for better visualization
 plt.figure(figsize=(6, 4))
 sns.heatmap(
     conf_matrix,
