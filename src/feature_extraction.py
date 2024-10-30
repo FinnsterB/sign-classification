@@ -1,9 +1,6 @@
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 import os
-import pandas as pd
 
 # Initialize the min and max HSV values
 hmin, smin, vmin = 55, 0, 0  # You can adjust these based on your preference
