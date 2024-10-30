@@ -131,7 +131,7 @@ def houghCircles(image_path):
             cv2.circle(img, (x, y), r, (0, 255, 0), 2)
             cv2.circle(img, (x, y), 2, (0, 0, 255), 3)
 
-    # showImg("Hough Circles on Original Image", img)
+    showImg("Hough Circles on Original Image", img)
 
     return circles
 
@@ -197,10 +197,13 @@ def find_circle(img_path):
     result = cv2.bitwise_and(img, img, mask=mask)
 
     gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    blurred = cv2.GaussianBlur(gray, (3, 3), 0)
 
-    edged = cv2.Canny(blurred, 50, 130)
-    contours, _ = cv2.findContours(edged, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    _, thresholded = cv2.threshold(blurred, 50, 255, cv2.THRESH_BINARY)
+
+    edged = cv2.Canny(thresholded, 50, 130)
+    contours, _ = cv2.findContours(thresholded, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     # Colors for different shapes
     colors = {"Circle": (0, 255, 0), "Unknown": (0, 0, 255)}
@@ -214,7 +217,7 @@ def find_circle(img_path):
         shape_type = "Unknown"
         color = colors["Unknown"]
 
-        if len(approx) > 4:
+        if len(approx) >= 4:
             area = cv2.contourArea(c)
             radius = perimeter / (2 * 3.14159)
             circularity = area / (3.14159 * (radius**2))
@@ -232,7 +235,6 @@ def find_circle(img_path):
         cv2.putText(
             result, shape_type, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2
         )
-
         total_shapes += 1
 
     return total_circles, total_uknowns, total_shapes
