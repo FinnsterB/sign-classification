@@ -4,7 +4,7 @@ from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 import seaborn as sns
 import matplotlib.pyplot as plt
-from feature_extraction import get_all_features
+from correlation_matrix import get_all_features
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns

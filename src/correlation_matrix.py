@@ -4,7 +4,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 import pandas as pd
-import seaborn as sns
+from sklearn.metrics import confusion_matrix, accuracy_score
+from sklearn.neighbors import KNeighborsClassifier
+
 
 # Initialize the min and max HSV values
 hmin, smin, vmin = 55, 0, 0  # You can adjust these based on your preference
@@ -254,9 +256,70 @@ def get_features(image_path):
     return features
 
 
+def create_confusion_matrices(df):
+    features = df.columns[:-1]  # Exclude the label column
+    label_col = 'Label'
+
+    # Iterate over each feature and create confusion matrix
+    for feature in features:
+        X = df[[feature]].values  # Reshape each feature to be used independently
+        y = df[label_col].values
+
+        # Initialize a simple classifier (like K-Nearest Neighbors)
+        clf = KNeighborsClassifier(n_neighbors=3)
+        clf.fit(X, y)
+
+        # Generate predictions
+        y_pred = clf.predict(X)
+
+        # Calculate confusion matrix and accuracy
+        cm = confusion_matrix(y, y_pred)
+        accuracy = accuracy_score(y, y_pred)
+
+        # Display the confusion matrix
+        plt.figure(figsize=(6, 4))
+        sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", cbar=False,
+                    xticklabels=sorted(df[label_col].unique()),
+                    yticklabels=sorted(df[label_col].unique()))
+        plt.xlabel("Predicted Labels")
+        plt.ylabel("True Labels")
+        plt.title(f"Confusion Matrix for {feature}\nAccuracy: {accuracy:.2%}")
+        plt.show()
+
+        print(f"Accuracy for {feature}: {accuracy:.2%}")
+
+
+def plot_correlation_matrices(df):
+    # Map feature numbers to descriptive names based on the extraction functions
+    feature_names = ["Digits Count", "Perimeter", "Circles Count", "Unknown Shapes", "Total Shapes"]
+
+    # Rename columns to include descriptive feature names and a clear label name
+    df.columns = feature_names + ['Speed Limit Label']
+
+    # Calculate correlation matrix
+    correlation_matrix = df.corr()
+
+    # Plot correlation matrix with feature relationships to the Speed Limit Label
+    plt.figure(figsize=(12, 8))
+    sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", square=True,
+                cbar_kws={'shrink': 0.8}, linewidths=.5)
+    plt.title("Correlation Matrix Between Features and Speed Limit Labels")
+    plt.show()
+
+    # Print each feature's correlation with the Speed Limit Label
+    for feature in feature_names:
+        correlation = correlation_matrix.loc[feature, 'Speed Limit Label']
+        print(f"Correlation between {feature} and Speed Limit Label: {correlation:.2f}")
+
+
 def get_all_features(image_dir):
+
     x = []
     y = []
+    df = pd.DataFrame(
+        x, columns=["Feature 1", "Feature 2", "Feature 3", "Feature 4", "Feature 5"]
+    )
+    df["Label"] = y
     for entry in os.listdir(image_dir):
         path = os.path.join(image_dir, entry)
         if os.path.isdir(path):
@@ -265,18 +328,25 @@ def get_all_features(image_dir):
             y += labels
         else:
             x.append(get_features(path))
-            label = image_dir.replace("segmented_data/", "")
-            y.append(int(label))
+
+            # Extract the label from the directory name
+            try:
+                label = os.path.basename(image_dir)  # Get the last part of the path
+                y.append(int(label))  # Convert label to int
+            except ValueError:
+                print(f"Error: Could not convert directory name '{label}' to an integer.")
+                continue  # Skip this entry if label is invalid
+
     return x, y
 
 
-x, y = get_all_features("segmented_data")
+x, y = get_all_features(r"C:\Users\Blast\Desktop\Machine Learning\segmented_dataset")
 length = 0
 for i in x:
     length += len(i)
 print(length)
-print(x)
-# print(y)
+#print(x)
+#print(y)
 
 # Convert to DataFrame
 df = pd.DataFrame(
@@ -284,9 +354,12 @@ df = pd.DataFrame(
 )
 df["Label"] = y
 
+#create_confusion_matrices(df) # print all confusion matrices
+plot_correlation_matrices(df)
+
+"""
 # Melt the DataFrame for easier plotting
 df_melted = pd.melt(df, id_vars="Label", var_name="Feature", value_name="Value")
-
 # Create boxplot for the first feature, grouped by labels
 plt.figure(figsize=(8, 6))
 sns.boxplot(x="Label", y="Feature 1", data=df)
@@ -318,3 +391,5 @@ plt.title("Boxplot of Total Grouped by Labels")
 sns.boxplot(x="Label", y="Feature 5", data=df)
 plt.title("Boxplot of Perimiter Grouped by Labels")
 plt.show()
+
+"""
