@@ -1,5 +1,6 @@
 /dataset/*/*.png
 /segmented_data
+/data_classification
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
