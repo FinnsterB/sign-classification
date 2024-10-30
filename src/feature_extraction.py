@@ -1,217 +1,320 @@
-import os
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-from pathlib import Path
-from sklearn.model_selection import train_test_split
-import concurrent.futures
+import seaborn as sns
+import os
+import pandas as pd
+import seaborn as sns
+
+# Initialize the min and max HSV values
+hmin, smin, vmin = 55, 0, 0  # You can adjust these based on your preference
+hmax, smax, vmax = 126, 255, 180
+
+LOWER = np.array([67, 0, 140])
+UPPER = np.array([130, 255, 255])
 
 
-def find_circle_mask(image):
-    # Convert the image to the HSV color space
-    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+def showImg(window_name, img):
+    cv2.imshow(window_name, img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
-    # Define color range for detecting red and purple hues in HSV space
-    lower_red1 = np.array([0, 50, 50])
-    upper_red1 = np.array([10, 255, 255])
-    lower_red2 = np.array([160, 50, 50])
-    upper_red2 = np.array([180, 255, 255])
-    lower_purple = np.array([130, 50, 50])
-    upper_purple = np.array([160, 255, 255])
 
-    # Create masks for red and purple
-    mask_red1 = cv2.inRange(hsv, lower_red1, upper_red1)
-    mask_red2 = cv2.inRange(hsv, lower_red2, upper_red2)
-    mask_purple = cv2.inRange(hsv, lower_purple, upper_purple)
+def numberOfDigits(image_path):
+    img = cv2.imread(image_path)
+    imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(imgHSV, LOWER, UPPER)
 
-    # Combine the red and purple masks
-    mask = cv2.add(mask_red1, mask_red2)
-    mask = cv2.add(mask, mask_purple)
-
-    # Find contours in the mask
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Sort contours by area and keep the largest one (assuming it's the circle)
-    if len(contours) == 0:
-        raise ValueError("No red or purple circular outline found.")
-
-    contour = max(contours, key=cv2.contourArea)
-
-    # Get the minimum enclosing circle for the contour
-    (x, y), radius = cv2.minEnclosingCircle(contour)
-
-    # Create a circular mask based on the detected circle
-    mask_circle = np.zeros_like(image[:, :, 0])
-    cv2.circle(mask_circle, (int(x), int(y)), int(radius), 255, -1)
-
-    return mask_circle, (x, y, radius)
+    min_contour_area = 100
+    large_contours = [c for c in contours if cv2.contourArea(c) > min_contour_area]
+    return len(large_contours)
 
 
-def calculate_black_white_areas(image, mask_circle):
-    # Convert the image to grayscale
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+def calculate_perimeter(image_path):
+    img = cv2.imread(image_path)
+    imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-    # Apply the circular mask
-    masked_gray = cv2.bitwise_and(gray, gray, mask=mask_circle)
+    mask = cv2.inRange(imgHSV, LOWER, UPPER)
+    result = cv2.bitwise_and(img, img, mask=mask)
 
-    # Threshold the grayscale image (0: black, 255: white)
-    _, thresh = cv2.threshold(masked_gray, 128, 255, cv2.THRESH_BINARY)
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Calculate the number of black and white pixels inside the circle
-    white_pixels = np.sum(thresh == 255)
-    black_pixels = np.sum(thresh == 0)
+    min_contour_area = 100
+    large_contours = [c for c in contours if cv2.contourArea(c) > min_contour_area]
 
-    # Return the black and white areas
-    return black_pixels, white_pixels
+    total_perimeter = 0
+
+    for contour in large_contours:
+        total_perimeter += cv2.arcLength(contour, True)
+
+    return total_perimeter
+
+
+def harrisCornerDetection(image_path):
+    img = cv2.imread(image_path)
+    imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+    lower = np.array([55, 0, 0])
+    upper = np.array([126, 255, 180])
+    mask = cv2.inRange(imgHSV, lower, upper)
+    masked_img = cv2.bitwise_and(img, img, mask=mask)
+
+    gray = cv2.cvtColor(masked_img, cv2.COLOR_BGR2GRAY)
+
+    gray = np.float32(gray)
+    corners = cv2.cornerHarris(gray, blockSize=2, ksize=3, k=0.18)
+
+    corners = cv2.dilate(corners, None)
+
+    img[corners > 0.01 * corners.max()] = [0, 0, 255]
+
+    showImg("Harris Corners", img)
+
+    return corners
+
+
+def houghLines(image_path):
+    img = cv2.imread(image_path)
+    imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+    lower = np.array([55, 0, 0])
+    upper = np.array([126, 255, 180])
+    mask = cv2.inRange(imgHSV, lower, upper)
+    result = cv2.bitwise_and(img, img, mask=mask)
+
+    gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
+
+    edges = cv2.Canny(gray, 50, 150, apertureSize=3)
+
+    lines = cv2.HoughLinesP(
+        edges, rho=1, theta=np.pi / 180, threshold=28, minLineLength=10, maxLineGap=50
+    )
+
+    if lines is not None:
+        for line in lines:
+            x1, y1, x2, y2 = line[0]
+            cv2.line(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
+    # showImg("Hough Lines on Original Image", img)
+
+    return lines
+
+
+def houghCircles(image_path):
+    img = cv2.imread(image_path)
+    imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+    lower = np.array([0, 0, 136])
+    upper = np.array([147, 45, 216])
+    mask = cv2.inRange(imgHSV, lower, upper)
+    result = cv2.bitwise_and(img, img, mask=mask)
+
+    gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
+
+    blurred = cv2.GaussianBlur(gray, (9, 9), 2)
+
+    circles = cv2.HoughCircles(
+        blurred,
+        cv2.HOUGH_GRADIENT,
+        dp=1.2,
+        minDist=20,
+        param1=50,
+        param2=40,
+        minRadius=10,
+        maxRadius=50,
+    )
+
+    if circles is not None:
+        circles = np.round(circles[0, :]).astype("int")
+        for x, y, r in circles:
+            cv2.circle(img, (x, y), r, (0, 255, 0), 2)
+            cv2.circle(img, (x, y), 2, (0, 0, 255), 3)
+
+    # showImg("Hough Circles on Original Image", img)
+
+    return circles
+
+
+def empty(a):
+    pass
+
+
+def color_controls():
+    cv2.namedWindow("Trackbars", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("Trackbars", 640, 200)
+
+    cv2.createTrackbar("Hue Min", "Trackbars", hmin, 179, empty)
+    cv2.createTrackbar("Hue Max", "Trackbars", hmax, 179, empty)
+    cv2.createTrackbar("Sat Min", "Trackbars", smin, 255, empty)
+    cv2.createTrackbar("Sat Max", "Trackbars", smax, 255, empty)
+    cv2.createTrackbar("Val Min", "Trackbars", vmin, 255, empty)
+    cv2.createTrackbar("Val Max", "Trackbars", vmax, 255, empty)
 
 
 def process_image(image_path):
-    # Load the image
-    image = cv2.imread(str(image_path))
-    if image is None:
-        raise ValueError(f"Image {image_path} is corrupted or unreadable.")
+    img = cv2.imread(image_path)
+    if img is None:
+        print(f"Error: The image '{image_path}' could not be loaded.")
+        return
+    img_resized = cv2.resize(img, (640, 480))
+    imgHSV = cv2.cvtColor(img_resized, cv2.COLOR_BGR2HSV)
 
-    # Find the circular mask
-    mask_circle, circle_info = find_circle_mask(image)
+    color_controls()
 
-    # Calculate the black and white areas inside the circle
-    black_pixels, white_pixels = calculate_black_white_areas(image, mask_circle)
+    while True:
+        hmin = cv2.getTrackbarPos("Hue Min", "Trackbars")
+        hmax = cv2.getTrackbarPos("Hue Max", "Trackbars")
+        smin = cv2.getTrackbarPos("Sat Min", "Trackbars")
+        smax = cv2.getTrackbarPos("Sat Max", "Trackbars")
+        vmin = cv2.getTrackbarPos("Val Min", "Trackbars")
+        vmax = cv2.getTrackbarPos("Val Max", "Trackbars")
 
-    if white_pixels == 0 and black_pixels == 0:
-        raise ValueError(f"Could not calculate black-white areas for image {image_path}. No area detected.")
+        lower = np.array([hmin, smin, vmin])
+        upper = np.array([hmax, smax, vmax])
 
-    return black_pixels, white_pixels
+        mask = cv2.inRange(imgHSV, lower, upper)
+        result = cv2.bitwise_and(img_resized, img_resized, mask=mask)
 
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-def load_and_process_images(data_directory, max_retries=5, timeout=1):
-    black_areas = []
-    white_areas = []
-    labels = []
+        # cv2.imshow("Masked Image", result)
 
-    # Get all subdirectories (these are the labels)
-    data_path = Path(data_directory)
-    subfolders = [f for f in data_path.iterdir() if f.is_dir()]
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            break
 
-    # Set up a ThreadPoolExecutor for managing timeouts
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        for subfolder in subfolders:
-            label = subfolder.name  # The label will be the name of the subfolder
-
-            # Get all .png files in the subfolder
-            for image_path in subfolder.glob("*.png"):
-                success = False
-                attempts = 0
-
-                print(f"[INFO] Processing image: {image_path}")
-
-                while attempts < max_retries:
-                    try:
-                        # Try processing the image with timeout
-                        future = executor.submit(process_image, image_path)
-                        black_pixels, white_pixels = future.result(timeout=timeout)
-
-                        # Add the areas and label to the dataset
-                        black_areas.append(black_pixels)
-                        white_areas.append(white_pixels)
-                        labels.append(label)
-
-                        success = True
-                        break  # Exit retry loop if successful
-                    except concurrent.futures.TimeoutError:
-                        print(f"[WARNING] Image {image_path} took too long to process. Skipping...")
-                        break
-                    except Exception as e:
-                        attempts += 1
-                        print(f"[WARNING] Attempt {attempts} failed for image {image_path}: {e}")
-
-                if not success:
-                    # If all attempts failed, log the error and move to the next image
-                    print(f"[ERROR] Failed to process image {image_path} after {max_retries} attempts. Skipping.")
-
-    return black_areas, white_areas, labels
+    cv2.destroyAllWindows()
 
 
-def remove_outliers(black_areas, white_areas, labels, sensitivity=2.5):
-    # Convert to numpy arrays
-    black_areas = np.array(black_areas)
-    white_areas = np.array(white_areas)
-    labels = np.array(labels)
+def find_circle(img_path):
+    total_shapes = 0
+    total_circles = 0
+    total_uknowns = 0
+    img = cv2.imread(img_path)
+    imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-    # Calculate the IQR (Interquartile Range)
-    Q1_black = np.percentile(black_areas, 25)
-    Q3_black = np.percentile(black_areas, 75)
-    IQR_black = Q3_black - Q1_black
+    lower = np.array([67, 0, 140])
+    upper = np.array([130, 255, 255])
+    mask = cv2.inRange(imgHSV, LOWER, UPPER)
+    result = cv2.bitwise_and(img, img, mask=mask)
 
-    Q1_white = np.percentile(white_areas, 25)
-    Q3_white = np.percentile(white_areas, 75)
-    IQR_white = Q3_white - Q1_white
+    gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
-    # Define bounds for outliers using less sensitivity (2.5 times IQR)
-    lower_bound_black = Q1_black - sensitivity * IQR_black
-    upper_bound_black = Q3_black + sensitivity * IQR_black
+    edged = cv2.Canny(blurred, 50, 130)
+    contours, _ = cv2.findContours(edged, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-    lower_bound_white = Q1_white - sensitivity * IQR_white
-    upper_bound_white = Q3_white + sensitivity * IQR_white
+    # Colors for different shapes
+    colors = {"Circle": (0, 255, 0), "Unknown": (0, 0, 255)}
 
-    # Filter the black and white areas to remove outliers
-    valid_indices = np.where((black_areas >= lower_bound_black) & (black_areas <= upper_bound_black) &
-                             (white_areas >= lower_bound_white) & (white_areas <= upper_bound_white))
+    for i, c in enumerate(contours):
+        if cv2.contourArea(c) < 50:
+            continue
+        perimeter = cv2.arcLength(c, True)
+        approx = cv2.approxPolyDP(c, 0.00004 * perimeter, True)
 
-    filtered_black_areas = black_areas[valid_indices]
-    filtered_white_areas = white_areas[valid_indices]
-    filtered_labels = labels[valid_indices]
+        shape_type = "Unknown"
+        color = colors["Unknown"]
 
-    return filtered_black_areas, filtered_white_areas, filtered_labels
+        if len(approx) > 4:
+            area = cv2.contourArea(c)
+            radius = perimeter / (2 * 3.14159)
+            circularity = area / (3.14159 * (radius**2))
+            if 0.5 <= circularity <= 1.5:
+                shape_type = "Circle"
+                total_circles += 1
+                color = colors["Circle"]
+            else:
+                shape_type = "Unknown"
+                total_uknowns += 1
+                color = colors["Unknown"]
 
+        cv2.drawContours(result, [c], -1, color, 2)
+        x, y, _, _ = cv2.boundingRect(c)
+        cv2.putText(
+            result, shape_type, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2
+        )
 
-def plot_results(black_areas, white_areas, labels):
-    # Remove outliers before plotting (less sensitive outlier detection)
-    black_areas, white_areas, labels = remove_outliers(black_areas, white_areas, labels)
+        total_shapes += 1
 
-    # Create subplots: one for scatter plot, one for box plot
-    fig, ax = plt.subplots(2, 1, figsize=(10, 10))
-
-    # Convert labels to integers for plotting
-    label_dict = {label: i for i, label in enumerate(set(labels))}
-    numeric_labels = [label_dict[label] for label in labels]
-
-    # Scatter plot (Black on X, White on Y)
-    scatter = ax[0].scatter(black_areas, white_areas, c=numeric_labels, cmap='rainbow', s=100, edgecolor='k',
-                            alpha=0.75)
-    ax[0].set_title("Black vs. White Area Inside Circular Signs (Scatter Plot)")
-    ax[0].set_xlabel("Black Area (pixels)")
-    ax[0].set_ylabel("White Area (pixels)")
-    legend1 = ax[0].legend(*scatter.legend_elements(), title="Labels")
-    ax[0].add_artist(legend1)
-
-    # Box plot of black areas
-    unique_labels = sorted(set(labels))
-    black_data_by_label = [[black_areas[i] for i in range(len(labels)) if labels[i] == label] for label in
-                           unique_labels]
-    white_data_by_label = [[white_areas[i] for i in range(len(labels)) if labels[i] == label] for label in
-                           unique_labels]
-
-    ax[1].boxplot(black_data_by_label, labels=unique_labels)
-    ax[1].set_title("Distribution of Black Area by Label (Box Plot)")
-    ax[1].set_xlabel("Labels")
-    ax[1].set_ylabel("Black Area (pixels)")
-
-    # Save the plot
-    plt.tight_layout()
-    plt.savefig("black_white_scatter_boxplot.png")
-    print("Plot saved as 'black_white_scatter_boxplot.png'")
-
-    # Show the plot
-    plt.show()
+    return total_circles, total_uknowns, total_shapes
 
 
-def main():
-    data_directory = r'C:\Users\Blast\Desktop\Machine Learning\segmented_dataset'  # Update this to your folder
-    black_areas, white_areas, labels = load_and_process_images(data_directory)
+def get_features(image_path):
+    features = []
+    features.append(numberOfDigits(image_path))
+    # features.append(harrisCornerDetection(image_path))
+    features.append(calculate_perimeter(image_path))
+    circles, unkowns, total = find_circle(image_path)
+    features.append(circles)
+    features.append(unkowns)
+    features.append(total)
+    # features.append(houghLines(image_path))
+    return features
 
-    # Plot the results
-    plot_results(black_areas, white_areas, labels)
+
+def get_all_features(image_dir):
+    x = []
+    y = []
+    for entry in os.listdir(image_dir):
+        path = os.path.join(image_dir, entry)
+        if os.path.isdir(path):
+            features, labels = get_all_features(path)
+            x += features
+            y += labels
+        else:
+            x.append(get_features(path))
+            label = image_dir.replace("segmented_data/", "")
+            y.append(int(label))
+    return x, y
 
 
-if __name__ == "__main__":
-    main()
+x, y = get_all_features("segmented_data")
+length = 0
+for i in x:
+    length += len(i)
+print(length)
+print(x)
+# print(y)
+
+# Convert to DataFrame
+df = pd.DataFrame(
+    x, columns=["Feature 1", "Feature 2", "Feature 3", "Feature 4", "Feature 5"]
+)
+df["Label"] = y
+
+# Melt the DataFrame for easier plotting
+df_melted = pd.melt(df, id_vars="Label", var_name="Feature", value_name="Value")
+
+# Create boxplot for the first feature, grouped by labels
+plt.figure(figsize=(8, 6))
+sns.boxplot(x="Label", y="Feature 1", data=df)
+plt.title("Boxplot of Amount of Digits Grouped by Labels")
+
+
+# Create boxplot for the first feature, grouped by labels
+plt.figure(figsize=(8, 6))
+sns.boxplot(x="Label", y="Feature 2", data=df)
+plt.title("Boxplot of Perimiter Grouped by Labels")
+
+
+# Create boxplot for the first feature, grouped by labels
+plt.figure(figsize=(8, 6))
+sns.boxplot(x="Label", y="Feature 3", data=df)
+plt.title("Boxplot of Circles Grouped by Labels")
+
+
+# Create boxplot for the first feature, grouped by labels
+plt.figure(figsize=(8, 6))
+sns.boxplot(x="Label", y="Feature 4", data=df)
+plt.title("Boxplot of Unknowns Grouped by Labels")
+
+
+# Create boxplot for the first feature, grouped by labels
+plt.figure(figsize=(8, 6))
+sns.boxplot(x="Label", y="Feature 5", data=df)
+plt.title("Boxplot of Total Grouped by Labels")
+sns.boxplot(x="Label", y="Feature 5", data=df)
+plt.title("Boxplot of Perimiter Grouped by Labels")
+plt.show()

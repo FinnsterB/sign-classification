@@ -82,6 +82,7 @@ def process_image(image_path):
         height, width, channels = img_resized.shape
         return np.zeros((height, width, channels), dtype=np.uint8)
     cropped_result = crop_image(image_without_background, largest_contour)
+    cropped_result = cv2.resize(cropped_result, (250, 250))
     return cropped_result
 
 

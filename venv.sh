@@ -11,3 +11,6 @@ pip install pandas
 pip install mglearn
 pip install -U matplotlib
 pip install opencv-python
+pip install imutils
+pip install seaborn
+pip install pandas
