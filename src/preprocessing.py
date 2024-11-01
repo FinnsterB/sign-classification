@@ -1,6 +1,7 @@
 import os
 import cv2
 import numpy as np
+import random
 
 
 def contains_red_circle(image_path):
@@ -34,7 +35,7 @@ def contains_red_circle(image_path):
                     axis_ratio = major_axis / minor_axis
 
                 # If the shape is oval it should also pass as a circle
-                if 0.5 <= axis_ratio <= 2.0:
+                if 0.7 <= axis_ratio <= 1.3:
                     return True
 
     return False
@@ -50,4 +51,27 @@ def remove_bad_data(segmented_data_dir):
                 os.remove(path)
 
 
+def equalize_image_count(base_dir):
+    dir_counts = {}
+    for dir_name in os.listdir(base_dir):
+        dir_path = os.path.join(base_dir, dir_name)
+        if os.path.isdir(dir_path):
+            image_files = [f for f in os.listdir(dir_path)]
+            dir_counts[dir_path] = len(image_files)
+
+    min_count = min(dir_counts.values())
+
+    for dir_path, count in dir_counts.items():
+        if count > min_count:
+            image_files = [f for f in os.listdir(dir_path)]
+            files_to_remove = random.sample(image_files, count - min_count)
+            for file_name in files_to_remove:
+                os.remove(os.path.join(dir_path, file_name))
+            print(
+                f"Reduced {dir_path} to {min_count} images by removing {len(files_to_remove)} images."
+            )
+    print("All directories have been equalized to the minimum count:", min_count)
+
+
 remove_bad_data("segmented_data")
+equalize_image_count("segmented_data")

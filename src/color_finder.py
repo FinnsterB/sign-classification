@@ -67,5 +67,5 @@ def process_image(image_path):
     cv2.destroyAllWindows()
 
 
-image_path = "dataset/60/1727344430767872426.png"
+image_path = "segmented_data/120/1730455974532221476.png"
 process_image(image_path)
