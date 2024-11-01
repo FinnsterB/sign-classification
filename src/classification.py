@@ -15,11 +15,6 @@ from sklearn.neighbors import KNeighborsClassifier
 import pickle
 
 x, y = get_all_features("segmented_data")
-length = 0
-for i in x:
-    length += len(i)
-print(length)
-print(x)
 
 features = np.array(x)
 labels = np.array(y)  # Assuming two classes (100 and 50)
@@ -34,11 +29,11 @@ clf = RandomForestClassifier()
 
 # Train the classifier if there's no pre-trained one available
 if os.path.exists("clf.pkl"):
-    with open("clf.pkl", 'rb') as file:
+    with open("clf.pkl", "rb") as file:
         clf = pickle.load(file)
 else:
     clf.fit(X_train, y_train)
-    with open("clf.pkl", 'wb') as file:
+    with open("clf.pkl", "wb") as file:
         pickle.dump(clf, file)
 
 # Make predictions and evaluate the classifier
@@ -71,11 +66,11 @@ clf_svc = SVC(kernel="linear")
 
 # Train the classifier if there's no pre-trained one available
 if os.path.exists("clf_svc.pkl"):
-    with open("clf_svc.pkl", 'rb') as file:
+    with open("clf_svc.pkl", "rb") as file:
         clf_svc = pickle.load(file)
 else:
     clf_svc.fit(X_train, y_train)
-    with open("clf_svc.pkl", 'wb') as file:
+    with open("clf_svc.pkl", "wb") as file:
         pickle.dump(clf_svc, file)
 
 y_pred_svc = clf_svc.predict(X_test)
@@ -105,11 +100,11 @@ clf_neighbor = KNeighborsClassifier(n_neighbors=5)
 
 # Train the classifier if there's no pre-trained one available
 if os.path.exists("clf_neighbor.pkl"):
-    with open("clf_neighbor.pkl", 'rb') as file:
+    with open("clf_neighbor.pkl", "rb") as file:
         clf_neighbor = pickle.load(file)
 else:
     clf_neighbor.fit(X_train, y_train)
-    with open("clf_neighbor.pkl", 'wb') as file:
+    with open("clf_neighbor.pkl", "wb") as file:
         pickle.dump(clf_neighbor, file)
 
 
