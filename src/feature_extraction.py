@@ -1,10 +1,6 @@
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 import os
-import pandas as pd
-import seaborn as sns
 
 # Initialize the min and max HSV values
 hmin, smin, vmin = 55, 0, 0  # You can adjust these based on your preference
@@ -132,7 +128,7 @@ def houghCircles(image_path):
             cv2.circle(img, (x, y), r, (0, 255, 0), 2)
             cv2.circle(img, (x, y), 2, (0, 0, 255), 3)
 
-    # showImg("Hough Circles on Original Image", img)
+    showImg("Hough Circles on Original Image", img)
 
     return circles
 
@@ -194,16 +190,17 @@ def find_circle(img_path):
     img = cv2.imread(img_path)
     imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-    lower = np.array([67, 0, 140])
-    upper = np.array([130, 255, 255])
     mask = cv2.inRange(imgHSV, LOWER, UPPER)
     result = cv2.bitwise_and(img, img, mask=mask)
 
     gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    blurred = cv2.GaussianBlur(gray, (3, 3), 0)
 
-    edged = cv2.Canny(blurred, 50, 130)
-    contours, _ = cv2.findContours(edged, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    _, thresholded = cv2.threshold(blurred, 50, 255, cv2.THRESH_BINARY)
+
+    edged = cv2.Canny(thresholded, 50, 130)
+    contours, _ = cv2.findContours(thresholded, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     # Colors for different shapes
     colors = {"Circle": (0, 255, 0), "Unknown": (0, 0, 255)}
@@ -217,7 +214,7 @@ def find_circle(img_path):
         shape_type = "Unknown"
         color = colors["Unknown"]
 
-        if len(approx) > 4:
+        if len(approx) >= 4:
             area = cv2.contourArea(c)
             radius = perimeter / (2 * 3.14159)
             circularity = area / (3.14159 * (radius**2))
@@ -235,7 +232,6 @@ def find_circle(img_path):
         cv2.putText(
             result, shape_type, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2
         )
-
         total_shapes += 1
 
     return total_circles, total_uknowns, total_shapes
@@ -268,53 +264,3 @@ def get_all_features(image_dir):
             label = image_dir.replace("segmented_data/", "")
             y.append(int(label))
     return x, y
-
-
-x, y = get_all_features("segmented_data")
-length = 0
-for i in x:
-    length += len(i)
-print(length)
-print(x)
-# print(y)
-
-# Convert to DataFrame
-df = pd.DataFrame(
-    x, columns=["Feature 1", "Feature 2", "Feature 3", "Feature 4", "Feature 5"]
-)
-df["Label"] = y
-
-# Melt the DataFrame for easier plotting
-df_melted = pd.melt(df, id_vars="Label", var_name="Feature", value_name="Value")
-
-# Create boxplot for the first feature, grouped by labels
-plt.figure(figsize=(8, 6))
-sns.boxplot(x="Label", y="Feature 1", data=df)
-plt.title("Boxplot of Amount of Digits Grouped by Labels")
-
-
-# Create boxplot for the first feature, grouped by labels
-plt.figure(figsize=(8, 6))
-sns.boxplot(x="Label", y="Feature 2", data=df)
-plt.title("Boxplot of Perimiter Grouped by Labels")
-
-
-# Create boxplot for the first feature, grouped by labels
-plt.figure(figsize=(8, 6))
-sns.boxplot(x="Label", y="Feature 3", data=df)
-plt.title("Boxplot of Circles Grouped by Labels")
-
-
-# Create boxplot for the first feature, grouped by labels
-plt.figure(figsize=(8, 6))
-sns.boxplot(x="Label", y="Feature 4", data=df)
-plt.title("Boxplot of Unknowns Grouped by Labels")
-
-
-# Create boxplot for the first feature, grouped by labels
-plt.figure(figsize=(8, 6))
-sns.boxplot(x="Label", y="Feature 5", data=df)
-plt.title("Boxplot of Total Grouped by Labels")
-sns.boxplot(x="Label", y="Feature 5", data=df)
-plt.title("Boxplot of Perimiter Grouped by Labels")
-plt.show()
