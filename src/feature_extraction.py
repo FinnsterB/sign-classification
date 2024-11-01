@@ -2,10 +2,6 @@ import cv2
 import numpy as np
 import os
 
-# Initialize the min and max HSV values
-hmin, smin, vmin = 55, 0, 0  # You can adjust these based on your preference
-hmax, smax, vmax = 126, 255, 180
-
 LOWER = np.array([67, 0, 140])
 UPPER = np.array([130, 255, 255])
 
@@ -16,8 +12,7 @@ def showImg(window_name, img):
     cv2.destroyAllWindows()
 
 
-def numberOfDigits(image_path):
-    img = cv2.imread(image_path)
+def numberOfDigits(img):
     imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(imgHSV, LOWER, UPPER)
 
@@ -28,8 +23,7 @@ def numberOfDigits(image_path):
     return len(large_contours)
 
 
-def calculate_perimeter(image_path):
-    img = cv2.imread(image_path)
+def calculate_perimeter(img):
     imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
     mask = cv2.inRange(imgHSV, LOWER, UPPER)
@@ -48,8 +42,7 @@ def calculate_perimeter(image_path):
     return total_perimeter
 
 
-def harrisCornerDetection(image_path):
-    img = cv2.imread(image_path)
+def harrisCornerDetection(img):
     imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
     lower = np.array([55, 0, 0])
@@ -71,8 +64,7 @@ def harrisCornerDetection(image_path):
     return corners
 
 
-def houghLines(image_path):
-    img = cv2.imread(image_path)
+def houghLines(img):
     imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
     lower = np.array([55, 0, 0])
@@ -98,8 +90,7 @@ def houghLines(image_path):
     return lines
 
 
-def houghCircles(image_path):
-    img = cv2.imread(image_path)
+def houghCircles(img):
     imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
     lower = np.array([0, 0, 136])
@@ -137,69 +128,23 @@ def empty(a):
     pass
 
 
-def color_controls():
-    cv2.namedWindow("Trackbars", cv2.WINDOW_NORMAL)
-    cv2.resizeWindow("Trackbars", 640, 200)
-
-    cv2.createTrackbar("Hue Min", "Trackbars", hmin, 179, empty)
-    cv2.createTrackbar("Hue Max", "Trackbars", hmax, 179, empty)
-    cv2.createTrackbar("Sat Min", "Trackbars", smin, 255, empty)
-    cv2.createTrackbar("Sat Max", "Trackbars", smax, 255, empty)
-    cv2.createTrackbar("Val Min", "Trackbars", vmin, 255, empty)
-    cv2.createTrackbar("Val Max", "Trackbars", vmax, 255, empty)
-
-
-def process_image(image_path):
-    img = cv2.imread(image_path)
-    if img is None:
-        print(f"Error: The image '{image_path}' could not be loaded.")
-        return
-    img_resized = cv2.resize(img, (640, 480))
-    imgHSV = cv2.cvtColor(img_resized, cv2.COLOR_BGR2HSV)
-
-    color_controls()
-
-    while True:
-        hmin = cv2.getTrackbarPos("Hue Min", "Trackbars")
-        hmax = cv2.getTrackbarPos("Hue Max", "Trackbars")
-        smin = cv2.getTrackbarPos("Sat Min", "Trackbars")
-        smax = cv2.getTrackbarPos("Sat Max", "Trackbars")
-        vmin = cv2.getTrackbarPos("Val Min", "Trackbars")
-        vmax = cv2.getTrackbarPos("Val Max", "Trackbars")
-
-        lower = np.array([hmin, smin, vmin])
-        upper = np.array([hmax, smax, vmax])
-
-        mask = cv2.inRange(imgHSV, lower, upper)
-        result = cv2.bitwise_and(img_resized, img_resized, mask=mask)
-
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-        # cv2.imshow("Masked Image", result)
-
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
-
-    cv2.destroyAllWindows()
-
-
-def find_circle(img_path):
+def find_circle(img):
     total_shapes = 0
     total_circles = 0
     total_uknowns = 0
-    img = cv2.imread(img_path)
     imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
     mask = cv2.inRange(imgHSV, LOWER, UPPER)
+
     result = cv2.bitwise_and(img, img, mask=mask)
 
     gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (3, 3), 0)
 
-
     _, thresholded = cv2.threshold(blurred, 50, 255, cv2.THRESH_BINARY)
 
     edged = cv2.Canny(thresholded, 50, 130)
+
     contours, _ = cv2.findContours(thresholded, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     # Colors for different shapes
@@ -239,10 +184,11 @@ def find_circle(img_path):
 
 def get_features(image_path):
     features = []
-    features.append(numberOfDigits(image_path))
+    img = cv2.imread(image_path)
+    features.append(numberOfDigits(img))
     # features.append(harrisCornerDetection(image_path))
-    features.append(calculate_perimeter(image_path))
-    circles, unkowns, total = find_circle(image_path)
+    features.append(calculate_perimeter(img))
+    circles, unkowns, total = find_circle(img)
     features.append(circles)
     features.append(unkowns)
     features.append(total)
