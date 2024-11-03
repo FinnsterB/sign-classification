@@ -25,9 +25,7 @@ def numberOfDigits(img):
 
 def calculate_perimeter(img):
     imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-
     mask = cv2.inRange(imgHSV, LOWER, UPPER)
-    result = cv2.bitwise_and(img, img, mask=mask)
 
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -40,6 +38,25 @@ def calculate_perimeter(img):
         total_perimeter += cv2.arcLength(contour, True)
 
     return total_perimeter
+
+
+def calculate_area(img):
+    imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+    mask = cv2.inRange(imgHSV, LOWER, UPPER)
+    result = cv2.bitwise_and(img, img, mask=mask)
+
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    min_contour_area = 100
+    large_contours = [c for c in contours if cv2.contourArea(c) > min_contour_area]
+
+    total_area = 0
+
+    for contour in large_contours:
+        total_area += cv2.contourArea(contour)
+
+    return total_area
 
 
 def harrisCornerDetection(img):
@@ -192,6 +209,7 @@ def get_features(image_path):
     features.append(circles)
     features.append(unkowns)
     features.append(total)
+    features.append(calculate_area(img))
     # features.append(houghLines(image_path))
     return features
 
