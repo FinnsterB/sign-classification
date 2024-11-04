@@ -67,6 +67,9 @@ def save_results(y_test, y_pred, model_name):
     ) as f:
         f.write(report)
 
+# Dictionary to store classifier learning curve data
+learning_curve_results = {}
+
 def plot_learning_curve(estimator, title, X, y):
     train_sizes, train_scores, test_scores = learning_curve(
         estimator, X, y, cv=5, scoring="accuracy", n_jobs=-1,
@@ -75,26 +78,26 @@ def plot_learning_curve(estimator, title, X, y):
 
     # Calculate the mean and standard deviation for train and test scores
     train_mean = np.mean(train_scores, axis=1)
-    train_std = np.std(train_scores, axis=1)
     test_mean = np.mean(test_scores, axis=1)
-    test_std = np.std(test_scores, axis=1)
 
-    # Plotting the learning curve
+    # Store train sizes and test mean accuracy in the dictionary
+    learning_curve_results[title] = (train_sizes, test_mean)
+
+    # Original plotting and saving (optional for individual plots)
     plt.figure(figsize=(10, 6))
     plt.plot(train_sizes, train_mean, 'o-', color="r", label="Training Score")
     plt.plot(train_sizes, test_mean, 'o-', color="g", label="Test Score")
 
-    # Adding shaded regions for standard deviation
-    plt.fill_between(train_sizes, train_mean - train_std, train_mean + train_std, color="r", alpha=0.2)
-    plt.fill_between(train_sizes, test_mean - test_std, test_mean + test_std, color="g", alpha=0.2)
+    plt.fill_between(train_sizes, train_mean - np.std(train_scores, axis=1),
+                     train_mean + np.std(train_scores, axis=1), color="r", alpha=0.2)
+    plt.fill_between(train_sizes, test_mean - np.std(test_scores, axis=1),
+                     test_mean + np.std(test_scores, axis=1), color="g", alpha=0.2)
 
     plt.title(f"{title} Learning Curve (Accuracy)")
     plt.xlabel("Training Examples")
     plt.ylabel("Accuracy Score")
     plt.legend(loc="best")
     plt.grid()
-
-    # Save the plot
     plt.savefig(os.path.join(learning_curve_dir, f"{title}_learning_curve.png"))
     plt.close()
 
@@ -207,11 +210,24 @@ for name, (clf, param_grid) in classifiers.items():
     elif accuracy_train > accuracy_test + 0.1:
         print(f"{name} is likely overfitting.")
     else:
-        print(f"{name} is performing reasonably well.")
+        print(f"{name} is performing really good.")
 
     save_results(y_test, y_pred, name)
     
     # Plot learning curve for each classifier
     plot_learning_curve(clf, name, X_train, y_train)
+    
+# Plot all classifiers' test accuracy on a combined graph
+plt.figure(figsize=(12, 8))
+for name, (train_sizes, test_mean) in learning_curve_results.items():
+    plt.plot(train_sizes, test_mean, marker='o', label=f"{name} Test Accuracy")
+
+plt.title("Classifier Test Accuracy vs Training Samples")
+plt.xlabel("Training Samples")
+plt.ylabel("Test Accuracy")
+plt.legend(loc="best")
+plt.grid()
+plt.savefig(os.path.join(output_dir, "all_classifiers_test_accuracy.png"))
+plt.show()
 
 print("\nAll results and models saved in the 'data_classification' folder.")
