@@ -4,8 +4,8 @@ import numpy as np
 # 27 80 0 255 0 255
 
 # Initialize the min and max HSV values
-hmin, smin, vmin = 0, 57, 60  # You can adjust these based on your preference
-hmax, smax, vmax = 179, 255, 255
+hmin, smin, vmin = 71, 0, 140  # You can adjust these based on your preference
+hmax, smax, vmax = 164, 255, 245
 
 
 def empty(a):
@@ -34,12 +34,12 @@ def process_image(image_path):
     img_resized = cv2.resize(img, (640, 480))
     imgHSV = cv2.cvtColor(img_resized, cv2.COLOR_BGR2HSV)
 
-    hmin = 119
-    hmax = 165
-    smin = 40
-    smax = 178
-    vmin = 68
-    vmax = 255
+    # hmin = 119
+    # hmax = 165
+    # smin = 40
+    # smax = 178
+    # vmin = 68
+    # vmax = 255
 
     color_controls()
 
@@ -55,6 +55,8 @@ def process_image(image_path):
         upper = np.array([hmax, smax, vmax])
 
         mask = cv2.inRange(imgHSV, lower, upper)
+        # kernel = kernel = np.ones((10, 10), np.uint8)
+        # mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
         mask = cv2.bitwise_not(mask)
         result = cv2.bitwise_and(img_resized, img_resized, mask=mask)
 
@@ -67,5 +69,7 @@ def process_image(image_path):
     cv2.destroyAllWindows()
 
 
-image_path = "segmented_data/120/1730455974532221476.png"
+image_path = "segmented_data/60/1727344441335547938.png"
+# image_path = "segmented_data/120/1730455942093421670.png"
+# image_path = "segmented_data/60/1727344416399168884.png"
 process_image(image_path)
