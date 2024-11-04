@@ -2,16 +2,20 @@ import cv2
 import numpy as np
 import os
 
-lower = np.array([67, 0, 130])
+lower = np.array([50, 0, 130])
 upper = np.array([164, 255, 245])
 
 
-def numberOfDigits(img):
+def create_digit_mask(img):
     imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(imgHSV, lower, upper)
-    # kernel = kernel = np.ones((8, 8), np.uint8)
-    # mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    kernel = kernel = np.ones((4, 4), np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    return mask
 
+
+def numberOfDigits(img):
+    mask = create_digit_mask(img)
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     min_contour_area = 100
@@ -20,11 +24,7 @@ def numberOfDigits(img):
 
 
 def calculate_perimeter(img):
-    imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    mask = cv2.inRange(imgHSV, lower, upper)
-    # kernel = kernel = np.ones((8, 8), np.uint8)
-    # mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-
+    mask = create_digit_mask(img)
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     min_contour_area = 100
@@ -39,35 +39,24 @@ def calculate_perimeter(img):
 
 
 def calculate_area(img):
-    imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-
-    mask = cv2.inRange(imgHSV, lower, upper)
-    # kernel = kernel = np.ones((8, 8), np.uint8)
-    # mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-    result = cv2.bitwise_and(img, img, mask=mask)
-
+    mask = create_digit_mask(img)
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     min_contour_area = 100
     large_contours = [c for c in contours if cv2.contourArea(c) > min_contour_area]
 
     total_area = 0
-
     for contour in large_contours:
         total_area += cv2.contourArea(contour)
 
     return total_area
 
 
-def find_circle(img, path):
+def find_circle(img):
     total_shapes = 0
     total_circles = 0
     total_uknowns = 0
-    imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-
-    mask = cv2.inRange(imgHSV, lower, upper)
-    # kernel = kernel = np.ones((8, 8), np.uint8)
-    # mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    mask = create_digit_mask(img)
 
     result = cv2.bitwise_and(img, img, mask=mask)
     gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
@@ -75,14 +64,12 @@ def find_circle(img, path):
 
     _, thresholded = cv2.threshold(blurred, 50, 255, cv2.THRESH_BINARY)
 
-    edged = cv2.Canny(thresholded, 50, 130)
-
     contours, _ = cv2.findContours(thresholded, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     # Colors for different shapes
     colors = {"Circle": (0, 255, 0), "Unknown": (0, 0, 255)}
 
-    for i, c in enumerate(contours):
+    for _, c in enumerate(contours):
         if cv2.contourArea(c) < 50:
             continue
         perimeter = cv2.arcLength(c, True)
@@ -110,7 +97,6 @@ def find_circle(img, path):
             result, shape_type, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2
         )
         total_shapes += 1
-
     return total_circles, total_uknowns, total_shapes
 
 
@@ -119,12 +105,32 @@ def get_features(image_path):
     img = cv2.imread(image_path)
     features.append(numberOfDigits(img))
     features.append(calculate_perimeter(img))
-    circles, unkowns, total = find_circle(img, image_path)
+    circles, unkowns, total = find_circle(img)
     features.append(circles)
     features.append(unkowns)
     features.append(total)
     features.append(calculate_area(img))
     return features
+
+
+def get_all_features(image_dir, debug=False):
+    x = []
+    y = []
+    for entry in os.listdir(image_dir):
+
+        path = os.path.join(image_dir, entry)
+        if os.path.isdir(path):
+            features, labels = get_all_features(path, debug)
+            x += features
+            y += labels
+        else:
+            x.append(get_features(path))
+            label = image_dir.replace("segmented_data/", "")
+            y.append(int(label))
+            if debug:
+                if show_debug(path):
+                    break
+    return x, y
 
 
 # Returns True if the user wants to skip to the next class
@@ -147,10 +153,8 @@ def show_debug(image_path):
 
     def update_mask():
         mask = cv2.inRange(imgHSV, lower, upper)
-        kernel = kernel = np.ones((5, 5), np.uint8)
+        kernel = kernel = np.ones((4, 4), np.uint8)
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-
         result = cv2.bitwise_and(img, img, mask=mask)
         combined_img = cv2.hconcat([img, result])
         combined_img = cv2.resize(combined_img, (800, 400))
@@ -192,26 +196,6 @@ def show_debug(image_path):
         elif key == 13:  # Enter key to proceed
             cv2.destroyAllWindows()
             break
-
-
-def get_all_features(image_dir, debug=False):
-    x = []
-    y = []
-    for entry in os.listdir(image_dir):
-
-        path = os.path.join(image_dir, entry)
-        if os.path.isdir(path):
-            features, labels = get_all_features(path, debug)
-            x += features
-            y += labels
-        else:
-            x.append(get_features(path))
-            label = image_dir.replace("segmented_data/", "")
-            y.append(int(label))
-            if debug:
-                if show_debug(path):
-                    break
-    return x, y
 
 
 if __name__ == "__main__":
