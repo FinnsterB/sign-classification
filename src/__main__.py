@@ -1,6 +1,7 @@
 import segmentation
 import feature_extraction
 import classification
+import preprocessing
 
 import cv2
 import argparse
@@ -40,10 +41,12 @@ def main():
             # Determine label using classifier
             segmented_frame = segmentation.process_image(frame)
 
+            if preprocessing.contains_red_circle(frame):
+
+
             x = feature_extraction.get_features(segmented_frame)
 
             print(x)
-            print(y)
             result = classification.useClassifiers(x)
 
             for entry in result:

@@ -4,8 +4,7 @@ import numpy as np
 import random
 
 
-def contains_red_circle(image_path):
-    img = cv2.imread(image_path)
+def contains_red_circle(img):
     if img is None:
         return False
 
@@ -47,7 +46,7 @@ def remove_bad_data(segmented_data_dir):
         if os.path.isdir(path):
             remove_bad_data(path)
         else:
-            if not contains_red_circle(path):
+            if not contains_red_circle(cv2.imread(path)):
                 os.remove(path)
 
 
@@ -73,5 +72,6 @@ def equalize_image_count(base_dir):
     print("All directories have been equalized to the minimum count:", min_count)
 
 
-remove_bad_data("segmented_data")
-equalize_image_count("segmented_data")
+if __name__ == "__main__":
+    remove_bad_data("segmented_data")
+    equalize_image_count("segmented_data")
