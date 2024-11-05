@@ -211,7 +211,6 @@ def useClassifiers(x):
     features = features.reshape(
         1, -1
     )  # Reshape to 2D array (1 sample, multiple features)
-
     print(best_classifier.predict_proba(features))
     print(best_classifier.predict(features))
     return y
