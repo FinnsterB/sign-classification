@@ -36,10 +36,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 
 import matplotlib  # fix for windows cuz aint running well
-import platform
 
-#if platform.system() == "Windows":
-    
 matplotlib.use("Agg")
 
 
@@ -67,9 +64,6 @@ def save_results(y_test, y_pred, model_name):
         os.path.join(reports_dir, f"{model_name}_classification_report.txt"), "w"
     ) as f:
         f.write(report)
-
-
-
 
 
 def plot_learning_curve(estimator, title, X, y):
@@ -193,6 +187,7 @@ classifiers = {
     ),
 }
 
+
 def initClassifiers():
     output_dir = "data_classification"
     models_dir = os.path.join(output_dir, "models")
@@ -208,18 +203,18 @@ def initClassifiers():
             print("Model not available")
         classifiers[name] = (clf, param_grid)
 
+
 def useClassifiers(x):
+    best_classifier, _ = classifiers["Bagging Classifier"]
     y = {}
     features = np.array(x)
-    features.reshape(1, -1)
-    print(features)
-    for name, (clf, param_grid) in classifiers.items():
-        y[name] = {clf.predict_proba(features)}
-    
-    return y
-    
-        
+    features = features.reshape(
+        1, -1
+    )  # Reshape to 2D array (1 sample, multiple features)
 
+    print(best_classifier.predict_proba(features))
+    print(best_classifier.predict(features))
+    return y
 
 
 if __name__ == "__main__":
@@ -258,7 +253,9 @@ if __name__ == "__main__":
                 clf = pickle.load(file)
             print(f"Loaded pre-trained modeltest_scores for {name}.")
         else:
-            grid_search = GridSearchCV(clf, param_grid, cv=5, scoring="accuracy", n_jobs=-1)
+            grid_search = GridSearchCV(
+                clf, param_grid, cv=5, scoring="accuracy", n_jobs=-1
+            )
             grid_search.fit(X_train, y_train)
             print(f"Best parameters for {name}: {grid_search.best_params_}")
 
