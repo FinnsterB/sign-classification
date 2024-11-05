@@ -37,10 +37,9 @@ def main():
             # Determine label using classifier
             segmented_frame = segmentation.process_image(frame)
 
-            x, y = feature_extraction.get_features(segmented_frame)
+            x = feature_extraction.get_features(segmented_frame)
 
             print(x)
-            print(y)
             classification.initClassifiers()
 
             result = classification.useClassifiers(x)
