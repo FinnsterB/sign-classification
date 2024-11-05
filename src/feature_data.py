@@ -10,6 +10,7 @@ FEATURES = [
     "Nr of circles",
     "Nr of unkown shapes",
     "Total nr of shapes",
+    "Area",
 ]
 
 FEATURE_DATA_FOLDER = "feature_plots"
@@ -49,6 +50,7 @@ def boxplot(df, feature_name):
 
 
 def scatterplot(df, feature1, feature2):
+    NR_OF_SIGNS = 5
     scatterplot_folder = FEATURE_DATA_FOLDER + "/scatterplots"
     os.makedirs(scatterplot_folder, exist_ok=True)
     plt.figure(figsize=(8, 6))
@@ -57,7 +59,7 @@ def scatterplot(df, feature1, feature2):
         y=feature2,
         hue="Label",
         data=df,
-        palette=sns.color_palette("husl", len(FEATURES)),
+        palette=sns.color_palette("husl", NR_OF_SIGNS),
     )
     plt.title(f"Scatter plot of {feature1} vs {feature2}")
     plt.xlabel(feature1)

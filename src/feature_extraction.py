@@ -2,25 +2,20 @@ import cv2
 import numpy as np
 import os
 
-# Initialize the min and max HSV values
-hmin, smin, vmin = 55, 0, 0  # You can adjust these based on your preference
-hmax, smax, vmax = 126, 255, 180
-
-LOWER = np.array([67, 0, 140])
-UPPER = np.array([130, 255, 255])
+lower = np.array([50, 0, 130])
+upper = np.array([164, 255, 245])
 
 
-def showImg(window_name, img):
-    cv2.imshow(window_name, img)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-
-def numberOfDigits(image_path):
-    img = cv2.imread(image_path)
+def create_digit_mask(img):
     imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    mask = cv2.inRange(imgHSV, LOWER, UPPER)
+    mask = cv2.inRange(imgHSV, lower, upper)
+    kernel = kernel = np.ones((4, 4), np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    return mask
 
+
+def numberOfDigits(img):
+    mask = create_digit_mask(img)
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     min_contour_area = 100
@@ -28,13 +23,8 @@ def numberOfDigits(image_path):
     return len(large_contours)
 
 
-def calculate_perimeter(image_path):
-    img = cv2.imread(image_path)
-    imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-
-    mask = cv2.inRange(imgHSV, LOWER, UPPER)
-    result = cv2.bitwise_and(img, img, mask=mask)
-
+def calculate_perimeter(img):
+    mask = create_digit_mask(img)
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     min_contour_area = 100
@@ -48,164 +38,38 @@ def calculate_perimeter(image_path):
     return total_perimeter
 
 
-def harrisCornerDetection(image_path):
-    img = cv2.imread(image_path)
-    imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+def calculate_area(img):
+    mask = create_digit_mask(img)
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    lower = np.array([55, 0, 0])
-    upper = np.array([126, 255, 180])
-    mask = cv2.inRange(imgHSV, lower, upper)
-    masked_img = cv2.bitwise_and(img, img, mask=mask)
+    min_contour_area = 100
+    large_contours = [c for c in contours if cv2.contourArea(c) > min_contour_area]
 
-    gray = cv2.cvtColor(masked_img, cv2.COLOR_BGR2GRAY)
+    total_area = 0
+    for contour in large_contours:
+        total_area += cv2.contourArea(contour)
 
-    gray = np.float32(gray)
-    corners = cv2.cornerHarris(gray, blockSize=2, ksize=3, k=0.18)
-
-    corners = cv2.dilate(corners, None)
-
-    img[corners > 0.01 * corners.max()] = [0, 0, 255]
-
-    showImg("Harris Corners", img)
-
-    return corners
+    return total_area
 
 
-def houghLines(image_path):
-    img = cv2.imread(image_path)
-    imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-
-    lower = np.array([55, 0, 0])
-    upper = np.array([126, 255, 180])
-    mask = cv2.inRange(imgHSV, lower, upper)
-    result = cv2.bitwise_and(img, img, mask=mask)
-
-    gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
-
-    edges = cv2.Canny(gray, 50, 150, apertureSize=3)
-
-    lines = cv2.HoughLinesP(
-        edges, rho=1, theta=np.pi / 180, threshold=28, minLineLength=10, maxLineGap=50
-    )
-
-    if lines is not None:
-        for line in lines:
-            x1, y1, x2, y2 = line[0]
-            cv2.line(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
-
-    # showImg("Hough Lines on Original Image", img)
-
-    return lines
-
-
-def houghCircles(image_path):
-    img = cv2.imread(image_path)
-    imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-
-    lower = np.array([0, 0, 136])
-    upper = np.array([147, 45, 216])
-    mask = cv2.inRange(imgHSV, lower, upper)
-    result = cv2.bitwise_and(img, img, mask=mask)
-
-    gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
-
-    blurred = cv2.GaussianBlur(gray, (9, 9), 2)
-
-    circles = cv2.HoughCircles(
-        blurred,
-        cv2.HOUGH_GRADIENT,
-        dp=1.2,
-        minDist=20,
-        param1=50,
-        param2=40,
-        minRadius=10,
-        maxRadius=50,
-    )
-
-    if circles is not None:
-        circles = np.round(circles[0, :]).astype("int")
-        for x, y, r in circles:
-            cv2.circle(img, (x, y), r, (0, 255, 0), 2)
-            cv2.circle(img, (x, y), 2, (0, 0, 255), 3)
-
-    showImg("Hough Circles on Original Image", img)
-
-    return circles
-
-
-def empty(a):
-    pass
-
-
-def color_controls():
-    cv2.namedWindow("Trackbars", cv2.WINDOW_NORMAL)
-    cv2.resizeWindow("Trackbars", 640, 200)
-
-    cv2.createTrackbar("Hue Min", "Trackbars", hmin, 179, empty)
-    cv2.createTrackbar("Hue Max", "Trackbars", hmax, 179, empty)
-    cv2.createTrackbar("Sat Min", "Trackbars", smin, 255, empty)
-    cv2.createTrackbar("Sat Max", "Trackbars", smax, 255, empty)
-    cv2.createTrackbar("Val Min", "Trackbars", vmin, 255, empty)
-    cv2.createTrackbar("Val Max", "Trackbars", vmax, 255, empty)
-
-
-def process_image(image_path):
-    img = cv2.imread(image_path)
-    if img is None:
-        print(f"Error: The image '{image_path}' could not be loaded.")
-        return
-    img_resized = cv2.resize(img, (640, 480))
-    imgHSV = cv2.cvtColor(img_resized, cv2.COLOR_BGR2HSV)
-
-    color_controls()
-
-    while True:
-        hmin = cv2.getTrackbarPos("Hue Min", "Trackbars")
-        hmax = cv2.getTrackbarPos("Hue Max", "Trackbars")
-        smin = cv2.getTrackbarPos("Sat Min", "Trackbars")
-        smax = cv2.getTrackbarPos("Sat Max", "Trackbars")
-        vmin = cv2.getTrackbarPos("Val Min", "Trackbars")
-        vmax = cv2.getTrackbarPos("Val Max", "Trackbars")
-
-        lower = np.array([hmin, smin, vmin])
-        upper = np.array([hmax, smax, vmax])
-
-        mask = cv2.inRange(imgHSV, lower, upper)
-        result = cv2.bitwise_and(img_resized, img_resized, mask=mask)
-
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-        # cv2.imshow("Masked Image", result)
-
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
-
-    cv2.destroyAllWindows()
-
-
-def find_circle(img_path):
+def find_circle(img):
     total_shapes = 0
     total_circles = 0
     total_uknowns = 0
-    img = cv2.imread(img_path)
-    imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    mask = create_digit_mask(img)
 
-    mask = cv2.inRange(imgHSV, LOWER, UPPER)
     result = cv2.bitwise_and(img, img, mask=mask)
-
     gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (3, 3), 0)
 
-
     _, thresholded = cv2.threshold(blurred, 50, 255, cv2.THRESH_BINARY)
 
-    edged = cv2.Canny(thresholded, 50, 130)
     contours, _ = cv2.findContours(thresholded, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     # Colors for different shapes
     colors = {"Circle": (0, 255, 0), "Unknown": (0, 0, 255)}
 
-    for i, c in enumerate(contours):
+    for _, c in enumerate(contours):
         if cv2.contourArea(c) < 50:
             continue
         perimeter = cv2.arcLength(c, True)
@@ -233,34 +97,106 @@ def find_circle(img_path):
             result, shape_type, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2
         )
         total_shapes += 1
-
     return total_circles, total_uknowns, total_shapes
 
 
 def get_features(image_path):
     features = []
-    features.append(numberOfDigits(image_path))
-    # features.append(harrisCornerDetection(image_path))
-    features.append(calculate_perimeter(image_path))
-    circles, unkowns, total = find_circle(image_path)
+    img = cv2.imread(image_path)
+    features.append(numberOfDigits(img))
+    features.append(calculate_perimeter(img))
+    circles, unkowns, total = find_circle(img)
     features.append(circles)
     features.append(unkowns)
     features.append(total)
-    # features.append(houghLines(image_path))
+    features.append(calculate_area(img))
     return features
 
 
-def get_all_features(image_dir):
+def get_all_features(image_dir, debug=False):
     x = []
     y = []
     for entry in os.listdir(image_dir):
+
         path = os.path.join(image_dir, entry)
         if os.path.isdir(path):
-            features, labels = get_all_features(path)
+            features, labels = get_all_features(path, debug)
             x += features
             y += labels
         else:
             x.append(get_features(path))
             label = image_dir.replace("segmented_data/", "")
             y.append(int(label))
+            if debug:
+                if show_debug(path):
+                    break
     return x, y
+
+
+# Returns True if the user wants to skip to the next class
+def show_debug(image_path):
+    global lower
+    global upper
+    img = cv2.imread(image_path)
+    imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(imgHSV, lower, upper)
+    result = cv2.bitwise_and(img, img, mask=mask)
+
+    # Combine the original and masked images horizontally
+    combined_img = cv2.hconcat([img, result])
+    combined_img = cv2.resize(combined_img, (800, 400))
+
+    # Create a trackbars window
+    trackbar_window_name = "Adjust HSV Thresholds"
+    cv2.namedWindow(trackbar_window_name, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(trackbar_window_name, 800, 200)
+
+    def update_mask():
+        mask = cv2.inRange(imgHSV, lower, upper)
+        kernel = kernel = np.ones((4, 4), np.uint8)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+        result = cv2.bitwise_and(img, img, mask=mask)
+        combined_img = cv2.hconcat([img, result])
+        combined_img = cv2.resize(combined_img, (800, 400))
+        cv2.imshow("Original vs masked", combined_img)
+
+    def update_HSV():
+        lower[0] = cv2.getTrackbarPos("Hue Min", trackbar_window_name)
+        lower[1] = cv2.getTrackbarPos("Sat Min", trackbar_window_name)
+        lower[2] = cv2.getTrackbarPos("Val Min", trackbar_window_name)
+        upper[0] = cv2.getTrackbarPos("Hue Max", trackbar_window_name)
+        upper[1] = cv2.getTrackbarPos("Sat Max", trackbar_window_name)
+        upper[2] = cv2.getTrackbarPos("Val Max", trackbar_window_name)
+        update_mask()
+
+    def empty(val):
+        pass
+
+    # Initialize trackbars with the values from the lower and upper arrays
+    cv2.createTrackbar("Hue Min", trackbar_window_name, lower[0], 179, empty)
+    cv2.createTrackbar("Hue Max", trackbar_window_name, upper[0], 179, empty)
+    cv2.createTrackbar("Sat Min", trackbar_window_name, lower[1], 255, empty)
+    cv2.createTrackbar("Sat Max", trackbar_window_name, upper[1], 255, empty)
+    cv2.createTrackbar("Val Min", trackbar_window_name, lower[2], 255, empty)
+    cv2.createTrackbar("Val Max", trackbar_window_name, upper[2], 255, empty)
+
+    cv2.imshow("Original vs masked", combined_img)
+
+    while True:
+        update_HSV()
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord("q"):
+            print(f"Lower HSV values: {lower}")
+            print(f"Upper HSV values: {upper}")
+            cv2.destroyAllWindows()
+            exit()
+        elif key == ord("s"):
+            cv2.destroyAllWindows()
+            return True
+        elif key == 13:  # Enter key to proceed
+            cv2.destroyAllWindows()
+            break
+
+
+if __name__ == "__main__":
+    get_all_features("segmented_data", debug=True)

@@ -68,7 +68,7 @@ def crop_image(image, largest_contour):
 
 def process_image(image_path):
     img = load_image(image_path)
-    adjusted = cv2.convertScaleAbs(img, alpha=1.5, beta=10)
+    adjusted = cv2.convertScaleAbs(img, alpha=1.5, beta=5)
     img_resized = cv2.resize(adjusted, (640, 480))
     mask = create_color_mask(img_resized)
 
