@@ -35,12 +35,10 @@ import pickle
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 
-# Load features and labels
 x, y = get_all_features("segmented_data")
 features = np.array(x)
 labels = np.array(y)
 
-# Split the data into training and testing sets
 X_train, X_valid, Y_train, Y_valid = train_test_split(
     features, labels, test_size=0.2, random_state=42
 )
@@ -168,7 +166,7 @@ classifiers = {
             "max_depth": [None, 10, 20, 30],
             "min_samples_split": [2, 5, 10],
             "min_samples_leaf": [1, 2, 4],
-            "max_features": ["auto", "sqrt", "log2"],
+            "max_features": ["sqrt", "log2", None],
         },
     ),
     "Logistic Regression": (
@@ -188,24 +186,9 @@ classifiers = {
             "max_depth": [None, 10, 20, 30],
             "min_samples_split": [2, 5, 10],
             "min_samples_leaf": [1, 2, 4],
-            "max_features": ["auto", "sqrt", "log2"],
+            "max_features": ["sqrt", "log2", None],
         },
     ),
-    # "SVC": (SVC(), {
-    #     'C': [0.1, 1, 10],  # Reduced options to minimize grid search combinations
-    #     'kernel': ['linear', 'rbf'],  # Removed 'poly' to avoid long training times
-    #     'gamma': [0.1, 1, 'scale'],  # Replaced 'auto' with smaller gamma values for faster convergence
-    #     'class_weight': [None, 'balanced']
-    # }),
-    # "GradientBoosting": (GradientBoostingClassifier(), {
-    #     'n_estimators': [50, 100, 200],             # Number of boosting stages to perform
-    #     'learning_rate': [0.01, 0.1, 0.2],          # Step size shrinkage used to prevent overfitting
-    #     'max_depth': [3, 5, 7],                     # Maximum depth of the individual estimators
-    #     'min_samples_split': [2, 5, 10],            # Minimum samples required to split an internal node
-    #     'min_samples_leaf': [1, 2, 4],              # Minimum samples required at each leaf node
-    #     'max_features': ['sqrt', 'log2', None],     # Number of features to consider when looking for the best split
-    #     'subsample': [0.8, 1.0],                    # Fraction of samples used for fitting individual trees
-    # })
     "Histogram-based Gradient Boosting": (
         HistGradientBoostingClassifier(),
         {
@@ -213,7 +196,7 @@ classifiers = {
             "max_depth": [3, 5, 7],
             "learning_rate": [0.01, 0.1, 0.2],
             "min_samples_leaf": [1, 2, 4],
-            "max_bins": [255, 511, 1023],  # Number of bins for histogram
+            "max_bins": [32, 64, 128, 255],
         },
     ),
     "Bagging Classifier": (
@@ -271,10 +254,8 @@ for name, (clf, param_grid) in classifiers.items():
 
     save_results(y_test, y_pred, name)
 
-    # Plot learning curve for each classifier
     plot_learning_curve(clf, name, X_train, y_train)
 
-# Plot all classifiers' test accuracy on a combined graph
 plt.figure(figsize=(12, 8))
 for name, (train_sizes, test_mean) in learning_curve_results.items():
     plt.plot(train_sizes, test_mean, marker="o", label=f"{name} Test Accuracy")
