@@ -199,4 +199,4 @@ def show_debug(image_path):
 
 
 if __name__ == "__main__":
-    get_all_features("segmented_data", debug=True)
+    print(get_all_features("segmented_data", debug=True))
