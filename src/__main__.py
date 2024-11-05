@@ -1,4 +1,3 @@
-import preprocessing
 import segmentation
 import feature_extraction
 import classification
@@ -40,6 +39,10 @@ def main():
 
             x, y = feature_extraction.get_features(segmented_frame)
 
+            print(x)
+            print(y)
+            classification.initClassifiers()
+
             result = classification.useClassifiers(x)
 
             for entry in result:
@@ -57,11 +60,14 @@ def main():
         cv2.destroyAllWindows()
     elif args.image and not args.video:
         frame = cv2.imread(args.image)
+        classification.initClassifiers()
         segmented_frame = segmentation.process_image(frame)
 
-        x, y = feature_extraction.get_features(segmented_frame)
+        features = feature_extraction.get_features(segmented_frame)
 
-        result = classification.useClassifiers(x)
+        print(features)
+
+        result = classification.useClassifiers(features)
 
         for entry in result:
             print(entry)
