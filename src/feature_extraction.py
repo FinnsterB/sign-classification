@@ -100,16 +100,15 @@ def find_circle(img):
     return total_circles, total_uknowns, total_shapes
 
 
-def get_features(image_path):
+def get_features(image):
     features = []
-    img = cv2.imread(image_path)
-    features.append(numberOfDigits(img))
-    features.append(calculate_perimeter(img))
-    circles, unkowns, total = find_circle(img)
+    features.append(numberOfDigits(image))
+    features.append(calculate_perimeter(image))
+    circles, unkowns, total = find_circle(image)
     features.append(circles)
     features.append(unkowns)
     features.append(total)
-    features.append(calculate_area(img))
+    features.append(calculate_area(image))
     return features
 
 
@@ -120,12 +119,13 @@ def get_all_features(image_dir, debug=False):
 
         path = os.path.join(image_dir, entry)
         if os.path.isdir(path):
-            features, labels = get_all_features(path, debug)
+            features, labels = get_all_features(path)
             x += features
             y += labels
         else:
-            x.append(get_features(path))
-            label = image_dir.replace("segmented_data/", "")
+            img = cv2.imread(path)
+            x.append(get_features(img))
+            label = os.path.relpath(image_dir, "segmented_data")
             y.append(int(label))
             if debug:
                 if show_debug(path):
@@ -133,11 +133,17 @@ def get_all_features(image_dir, debug=False):
     return x, y
 
 
-# Returns True if the user wants to skip to the next class
-def show_debug(image_path):
+def set_color_range(_lower, _upper):
     global lower
     global upper
-    img = cv2.imread(image_path)
+    lower = _lower
+    upper = _upper
+
+
+# Returns True if the user wants to skip to the next class
+def show_debug(img):
+    global lower
+    global upper
     imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(imgHSV, lower, upper)
     result = cv2.bitwise_and(img, img, mask=mask)
@@ -199,4 +205,4 @@ def show_debug(image_path):
 
 
 if __name__ == "__main__":
-    get_all_features("segmented_data", debug=True)
+    print(get_all_features("segmented_data", debug=True))
