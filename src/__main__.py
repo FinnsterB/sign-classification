@@ -42,15 +42,14 @@ def main():
 
             x = feature_extraction.get_features(segmented_frame)
 
-            print(x)
-            print(y)
-            result = classification.useClassifiers(x)
+            result, probability = classification.useClassifiers(x)
 
-            for entry in result:
-                print(entry)
+            
+
+            cv2.putText(frame, str(result) + ", probability: " + str(probability), (20,20), 0, 1, 0)
 
             # Display the processed frame (for debugging, if needed)
-            cv2.imshow(frame)
+            cv2.imshow("sign-classification", frame)
 
             # Exit the loop if the 'q' key is pressed
             if cv2.waitKey(1) & 0xFF == ord("q"):
