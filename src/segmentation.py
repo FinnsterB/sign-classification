@@ -66,9 +66,8 @@ def crop_image(image, largest_contour):
     return cropped_image
 
 
-def process_image(image_path):
-    img = load_image(image_path)
-    adjusted = cv2.convertScaleAbs(img, alpha=1.5, beta=5)
+def process_image(image):
+    adjusted = cv2.convertScaleAbs(image, alpha=1.5, beta=5)
     img_resized = cv2.resize(adjusted, (640, 480))
     mask = create_color_mask(img_resized)
 
@@ -97,7 +96,8 @@ def segment_images(image_dir):
             segment_images(path)
         else:
             if os.path.basename(path) != ".gitkeep":
-                processed_image = process_image(path)
+                img = load_image(path)
+                processed_image = process_image(img)
                 if not is_image_blank(processed_image):
                     save_image(path, processed_image)
 

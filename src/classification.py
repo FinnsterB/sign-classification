@@ -36,33 +36,8 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 
 import matplotlib  # fix for windows cuz aint running well
-import platform
 
-if platform.system() == "Windows":
-    matplotlib.use("Agg")
-
-x, y = get_all_features("segmented_data")
-features = np.array(x)
-labels = np.array(y)
-
-X_train, X_valid, Y_train, Y_valid = train_test_split(
-    features, labels, test_size=0.2, random_state=42
-)
-X_train, X_test, y_train, y_test = train_test_split(
-    X_train, Y_train, test_size=0.25, random_state=42
-)
-
-# Prepare directories for saving results
-output_dir = "data_classification"
-confusion_matrix_dir = os.path.join(output_dir, "confusion_matrices")
-reports_dir = os.path.join(output_dir, "classification_reports")
-models_dir = os.path.join(output_dir, "models")
-learning_curve_dir = os.path.join(output_dir, "learning_curves")
-os.makedirs(output_dir, exist_ok=True)
-os.makedirs(confusion_matrix_dir, exist_ok=True)
-os.makedirs(reports_dir, exist_ok=True)
-os.makedirs(models_dir, exist_ok=True)
-os.makedirs(learning_curve_dir, exist_ok=True)
+matplotlib.use("Agg")
 
 
 def save_results(y_test, y_pred, model_name):
@@ -89,10 +64,6 @@ def save_results(y_test, y_pred, model_name):
         os.path.join(reports_dir, f"{model_name}_classification_report.txt"), "w"
     ) as f:
         f.write(report)
-
-
-# Dictionary to store classifier learning curve data
-learning_curve_results = {}
 
 
 def plot_learning_curve(estimator, title, X, y):
@@ -217,61 +188,121 @@ classifiers = {
 }
 
 
-for name, (clf, param_grid) in classifiers.items():
-    model_path = os.path.join(models_dir, f"{name.replace(' ', '_')}.pkl")
+def initClassifiers():
+    output_dir = "data_classification"
+    models_dir = os.path.join(output_dir, "models")
 
-    if os.path.exists(model_path):
-        with open(model_path, "rb") as file:
-            clf = pickle.load(file)
-        print(f"Loaded pre-trained modeltest_scores for {name}.")
-    else:
-        grid_search = GridSearchCV(clf, param_grid, cv=5, scoring="accuracy", n_jobs=-1)
-        grid_search.fit(X_train, y_train)
-        print(f"Best parameters for {name}: {grid_search.best_params_}")
+    for name, (clf, param_grid) in classifiers.items():
+        model_path = os.path.join(models_dir, f"{name.replace(' ', '_')}.pkl")
 
-        clf = grid_search.best_estimator_
-        clf.fit(X_train, y_train)
+        if os.path.exists(model_path):
+            with open(model_path, "rb") as file:
+                clf = pickle.load(file)
+            print(f"Loaded pre-trained modeltest_scores for {name}.")
+        else:
+            print("Model not available")
+        classifiers[name] = (clf, param_grid)
 
-        with open(model_path, "wb") as file:
-            pickle.dump(clf, file)
-        print(f"Trained and saved model for {name}.")
 
-    y_pred = clf.predict(X_test)
+def useClassifiers(x):
+    best_classifier, _ = classifiers["Bagging Classifier"]
+    y = {}
+    features = np.array(x)
+    features = features.reshape(
+        1, -1
+    )  # Reshape to 2D array (1 sample, multiple features)
+    result = best_classifier.predict(features)
+    probabilities = best_classifier.predict_proba(features)
+    return result, np.max(probabilities)
 
-    accuracy_train = accuracy_score(y_train, clf.predict(X_train))
-    accuracy_test = accuracy_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred, average="weighted")
-    recall = recall_score(y_test, y_pred, average="weighted")
-    f1 = f1_score(y_test, y_pred, average="weighted")
 
-    print(f"\n{name} Performance:")
-    print(f"Training Accuracy: {accuracy_train:.4f}")
-    print(f"Test Accuracy: {accuracy_test:.4f}")
-    print(f"Precision: {precision:.4f}")
-    print(f"Recall: {recall:.4f}")
-    print(f"F1-score: {f1:.4f}")
+if __name__ == "__main__":
+    # Dictionary to store classifier learning curve data
+    learning_curve_results = {}
 
-    if accuracy_train < 0.6 and accuracy_test < 0.6:
-        print(f"{name} is likely underfitting.")
-    elif accuracy_train > accuracy_test + 0.1:
-        print(f"{name} is likely overfitting.")
-    else:
-        print(f"{name} is performing really good.")
+    # Load features and labels
+    x, y = get_all_features("segmented_data")
+    features = np.array(x)
+    labels = np.array(y)
 
-    save_results(y_test, y_pred, name)
+    # Split the data into training and testing sets
+    X_train, X_valid, Y_train, Y_valid = train_test_split(
+        features, labels, test_size=0.2, random_state=42
+    )
+    X_train, X_test, y_train, y_test = train_test_split(
+        X_train, Y_train, test_size=0.25, random_state=42
+    )
 
-    plot_learning_curve(clf, name, X_train, y_train)
+    # Prepare directories for saving results
+    output_dir = "data_classification"
+    confusion_matrix_dir = os.path.join(output_dir, "confusion_matrices")
+    reports_dir = os.path.join(output_dir, "classification_reports")
+    models_dir = os.path.join(output_dir, "models")
+    learning_curve_dir = os.path.join(output_dir, "learning_curves")
+    os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(confusion_matrix_dir, exist_ok=True)
+    os.makedirs(reports_dir, exist_ok=True)
+    os.makedirs(models_dir, exist_ok=True)
+    os.makedirs(learning_curve_dir, exist_ok=True)
+    for name, (clf, param_grid) in classifiers.items():
+        model_path = os.path.join(models_dir, f"{name.replace(' ', '_')}.pkl")
 
-plt.figure(figsize=(12, 8))
-for name, (train_sizes, test_mean) in learning_curve_results.items():
-    plt.plot(train_sizes, test_mean, marker="o", label=f"{name} Test Accuracy")
+        if os.path.exists(model_path):
+            with open(model_path, "rb") as file:
+                clf = pickle.load(file)
+            print(f"Loaded pre-trained modeltest_scores for {name}.")
+        else:
+            grid_search = GridSearchCV(
+                clf, param_grid, cv=5, scoring="accuracy", n_jobs=-1
+            )
+            grid_search.fit(X_train, y_train)
+            print(f"Best parameters for {name}: {grid_search.best_params_}")
 
-plt.title("Classifier Test Accuracy vs Training Samples")
-plt.xlabel("Training Samples")
-plt.ylabel("Test Accuracy")
-plt.legend(loc="best")
-plt.grid()
-plt.savefig(os.path.join(output_dir, "all_classifiers_test_accuracy.png"))
-plt.show()
+            clf = grid_search.best_estimator_
+            clf.fit(X_train, y_train)
 
-print("\nAll results and models saved in the 'data_classification' folder.")
+            with open(model_path, "wb") as file:
+                pickle.dump(clf, file)
+            print(f"Trained and saved model for {name}.")
+
+        y_pred = clf.predict(X_test)
+
+        accuracy_train = accuracy_score(y_train, clf.predict(X_train))
+        accuracy_test = accuracy_score(y_test, y_pred)
+        precision = precision_score(y_test, y_pred, average="weighted")
+        recall = recall_score(y_test, y_pred, average="weighted")
+        f1 = f1_score(y_test, y_pred, average="weighted")
+
+        print(f"\n{name} Performance:")
+        print(f"Training Accuracy: {accuracy_train:.4f}")
+        print(f"Test Accuracy: {accuracy_test:.4f}")
+        print(f"Precision: {precision:.4f}")
+        print(f"Recall: {recall:.4f}")
+        print(f"F1-score: {f1:.4f}")
+
+        if accuracy_train < 0.6 and accuracy_test < 0.6:
+            print(f"{name} is likely underfitting.")
+        elif accuracy_train > accuracy_test + 0.1:
+            print(f"{name} is likely overfitting.")
+        else:
+            print(f"{name} is performing really good.")
+
+        save_results(y_test, y_pred, name)
+
+        # Plot learning curve for each classifier
+        plot_learning_curve(clf, name, X_train, y_train)
+
+    # Plot all classifiers' test accuracy on a combined graph
+    plt.figure(figsize=(12, 8))
+    for name, (train_sizes, test_mean) in learning_curve_results.items():
+        plt.plot(train_sizes, test_mean, marker="o", label=f"{name} Test Accuracy")
+
+    plt.title("Classifier Test Accuracy vs Training Samples")
+    plt.xlabel("Training Samples")
+    plt.ylabel("Test Accuracy")
+    plt.legend(loc="best")
+    plt.grid()
+    plt.savefig(os.path.join(output_dir, "all_classifiers_test_accuracy.png"))
+    plt.show()
+
+    print("\nAll results and models saved in the 'data_classification' folder.")
