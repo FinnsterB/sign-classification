@@ -38,7 +38,6 @@ from sklearn.naive_bayes import GaussianNB
 
 
 
-
 def save_results(y_test, y_pred, model_name):
     conf_matrix = confusion_matrix(y_test, y_pred)
     plt.figure(figsize=(6, 4))
@@ -145,7 +144,7 @@ classifiers = {
             "max_depth": [None, 10, 20, 30],
             "min_samples_split": [2, 5, 10],
             "min_samples_leaf": [1, 2, 4],
-            "max_features": ["auto", "sqrt", "log2"],
+            "max_features": ["sqrt", "log2", None],
         },
     ),
     "Logistic Regression": (
@@ -165,24 +164,9 @@ classifiers = {
             "max_depth": [None, 10, 20, 30],
             "min_samples_split": [2, 5, 10],
             "min_samples_leaf": [1, 2, 4],
-            "max_features": ["auto", "sqrt", "log2"],
+            "max_features": ["sqrt", "log2", None],
         },
     ),
-    # "SVC": (SVC(), {
-    #     'C': [0.1, 1, 10],  # Reduced options to minimize grid search combinations
-    #     'kernel': ['linear', 'rbf'],  # Removed 'poly' to avoid long training times
-    #     'gamma': [0.1, 1, 'scale'],  # Replaced 'auto' with smaller gamma values for faster convergence
-    #     'class_weight': [None, 'balanced']
-    # }),
-    # "GradientBoosting": (GradientBoostingClassifier(), {
-    #     'n_estimators': [50, 100, 200],             # Number of boosting stages to perform
-    #     'learning_rate': [0.01, 0.1, 0.2],          # Step size shrinkage used to prevent overfitting
-    #     'max_depth': [3, 5, 7],                     # Maximum depth of the individual estimators
-    #     'min_samples_split': [2, 5, 10],            # Minimum samples required to split an internal node
-    #     'min_samples_leaf': [1, 2, 4],              # Minimum samples required at each leaf node
-    #     'max_features': ['sqrt', 'log2', None],     # Number of features to consider when looking for the best split
-    #     'subsample': [0.8, 1.0],                    # Fraction of samples used for fitting individual trees
-    # })
     "Histogram-based Gradient Boosting": (
         HistGradientBoostingClassifier(),
         {
@@ -190,7 +174,7 @@ classifiers = {
             "max_depth": [3, 5, 7],
             "learning_rate": [0.01, 0.1, 0.2],
             "min_samples_leaf": [1, 2, 4],
-            "max_bins": [255, 511, 1023],  # Number of bins for histogram
+            "max_bins": [32, 64, 128, 255],
         },
     ),
     "Bagging Classifier": (
