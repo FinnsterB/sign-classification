@@ -35,6 +35,9 @@ import pickle
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 
+import matplotlib # fix for windows cuz aint running well
+matplotlib.use("Agg")
+
 x, y = get_all_features("segmented_data")
 features = np.array(x)
 labels = np.array(y)
