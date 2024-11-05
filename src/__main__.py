@@ -7,6 +7,7 @@ import cv2
 import argparse
 import sys
 import time
+import numpy as np
 
 
 def main():
@@ -30,6 +31,10 @@ def main():
             print(f"Error: Could not open video {video_path}")
             return
 
+        feature_extraction.set_color_range(
+            np.array([50, 0, 54]), np.array([164, 150, 204])
+        )
+
         while cap.isOpened():
             # Read a frame from the video
             ret, frame = cap.read()
@@ -42,7 +47,7 @@ def main():
             segmented_frame = segmentation.process_image(frame)
 
             if not preprocessing.contains_red_circle(frame):
-                cv2.putText(frame, "Unknown", (20, 20), 0, 1, 0)
+                cv2.putText(frame, "Unknown", (5, 30), 0, 1, 0, thickness=2)
 
             else:
                 x = feature_extraction.get_features(segmented_frame)
@@ -52,10 +57,11 @@ def main():
                 cv2.putText(
                     frame,
                     str(result) + ", probability: " + str(probability),
-                    (20, 20),
+                    (5, 30),
                     0,
                     1,
                     0,
+                    thickness=2,
                 )
 
             # Display the processed frame (for debugging, if needed)

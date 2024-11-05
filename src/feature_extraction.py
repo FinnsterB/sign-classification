@@ -119,7 +119,7 @@ def get_all_features(image_dir, debug=False):
 
         path = os.path.join(image_dir, entry)
         if os.path.isdir(path):
-            features, labels = get_all_features(path, debug)
+            features, labels = get_all_features(path)
             x += features
             y += labels
         else:
@@ -133,11 +133,17 @@ def get_all_features(image_dir, debug=False):
     return x, y
 
 
-# Returns True if the user wants to skip to the next class
-def show_debug(image_path):
+def set_color_range(_lower, _upper):
     global lower
     global upper
-    img = cv2.imread(image_path)
+    lower = _lower
+    upper = _upper
+
+
+# Returns True if the user wants to skip to the next class
+def show_debug(img):
+    global lower
+    global upper
     imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(imgHSV, lower, upper)
     result = cv2.bitwise_and(img, img, mask=mask)
