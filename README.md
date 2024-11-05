@@ -28,6 +28,14 @@ Run the following command to download the dependencies:
 ./venv
 ```
 
+Run the following scripts to get the results from the dataset
+
+```
+python3 src/feature_extraction.py
+python3 src/preprocessing.py
+python3 src/classification.py
+```
+
 Run the following command to run a video with it
 
 ```
