@@ -56,5 +56,11 @@ python3 src/__main__.py --image=(path to your image)
 # Data set link
 The following link is to the dataset that we have used.
 
-https://hannl-my.sharepoint.com/:f:/r/personal/m_sterk_student_han_nl/Documents/ML%20Photos/dataset?csf=1&web=1&e=L4hEjX
+https://hannl-my.sharepoint.com/personal/m_sterk_student_han_nl/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fm%5Fsterk%5Fstudent%5Fhan%5Fnl%2FDocuments%2FML%20Photos
+
+# Test set
+
+The test set is used especially for the test_cases.
+
+Example: python3 src/__main__.py --image=test_set/1727344296913505264.png
 
