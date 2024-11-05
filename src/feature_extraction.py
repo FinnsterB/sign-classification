@@ -125,7 +125,7 @@ def get_all_features(image_dir, debug=False):
             y += labels
         else:
             x.append(get_features(path))
-            label = image_dir.replace("segmented_data/", "")
+            label = os.path.relpath(image_dir, "segmented_data")
             y.append(int(label))
             if debug:
                 if show_debug(path):
