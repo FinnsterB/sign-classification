@@ -17,7 +17,28 @@ The software should follow the structure as taught in class:
 
 As image acquisition is already done and is a manual task, it is excluded from our software. This means that for each part
 of the pipeline we have a python file. These are found in the 'src' folder. The __main__.py file should call functions from
-each part of the pipeline. 
+each part of the pipeline.
+
+
+# How to run the program
+
+Run the following command to download the dependencies:
+
+```
+./venv
+```
+
+Run the following command to run a video with it
+
+```
+python3 src/__main__.py --video=(path to your video)
+```
+
+Run the following command to run a single image with it
+
+```
+python3 src/__main__.py --image=(path to your image)
+```
 
 # Extra info:
 
