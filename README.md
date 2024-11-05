@@ -44,3 +44,9 @@ python3 src/__main__.py --image=(path to your image)
 
 - The dataset should be moved into the 'dataset' folder in this repo.
 - For access to the dataset contact one of the contributors.
+
+# Data set link
+The following link is to the dataset that we have used.
+
+https://hannl-my.sharepoint.com/:f:/r/personal/m_sterk_student_han_nl/Documents/ML%20Photos/dataset?csf=1&web=1&e=L4hEjX
+
