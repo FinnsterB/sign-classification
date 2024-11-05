@@ -41,16 +41,22 @@ def main():
             # Determine label using classifier
             segmented_frame = segmentation.process_image(frame)
 
-            if preprocessing.contains_red_circle(frame):
+            if not preprocessing.contains_red_circle(frame):
+                cv2.putText(frame, "Unknown", (20, 20), 0, 1, 0)
 
+            else:
+                x = feature_extraction.get_features(segmented_frame)
 
-            x = feature_extraction.get_features(segmented_frame)
+                result, probability = classification.useClassifiers(x)
 
-            result, probability = classification.useClassifiers(x)
-
-            
-
-            cv2.putText(frame, str(result) + ", probability: " + str(probability), (20,20), 0, 1, 0)
+                cv2.putText(
+                    frame,
+                    str(result) + ", probability: " + str(probability),
+                    (20, 20),
+                    0,
+                    1,
+                    0,
+                )
 
             # Display the processed frame (for debugging, if needed)
             cv2.imshow("sign-classification", frame)
@@ -69,13 +75,17 @@ def main():
 
         features = feature_extraction.get_features(segmented_frame)
 
-        print(features)
+        if not preprocessing.contains_red_circle(frame):
+            print("Unknown")
 
-        result = classification.useClassifiers(features)
-        print("Image processing time ms: " + str((time.time_ns() - start_time) / 1e6))
+        else:
+            result = classification.useClassifiers(features)
+            print(
+                "Image processing time ms: " + str((time.time_ns() - start_time) / 1e6)
+            )
 
-        for entry in result:
-            print(entry)
+            for entry in result:
+                print(entry)
     else:
         print("Error: Please specify either --video or --image, but not both.")
         sys.exit(1)
