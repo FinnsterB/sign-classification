@@ -35,7 +35,34 @@ import pickle
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 
+import matplotlib  # fix for windows cuz aint running well
+import platform
 
+if platform.system() == "Windows":
+    matplotlib.use("Agg")
+
+x, y = get_all_features("segmented_data")
+features = np.array(x)
+labels = np.array(y)
+
+X_train, X_valid, Y_train, Y_valid = train_test_split(
+    features, labels, test_size=0.2, random_state=42
+)
+X_train, X_test, y_train, y_test = train_test_split(
+    X_train, Y_train, test_size=0.25, random_state=42
+)
+
+# Prepare directories for saving results
+output_dir = "data_classification"
+confusion_matrix_dir = os.path.join(output_dir, "confusion_matrices")
+reports_dir = os.path.join(output_dir, "classification_reports")
+models_dir = os.path.join(output_dir, "models")
+learning_curve_dir = os.path.join(output_dir, "learning_curves")
+os.makedirs(output_dir, exist_ok=True)
+os.makedirs(confusion_matrix_dir, exist_ok=True)
+os.makedirs(reports_dir, exist_ok=True)
+os.makedirs(models_dir, exist_ok=True)
+os.makedirs(learning_curve_dir, exist_ok=True)
 
 
 def save_results(y_test, y_pred, model_name):
