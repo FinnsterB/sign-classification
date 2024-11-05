@@ -7,6 +7,7 @@ upper = np.array([164, 255, 245])
 
 
 def create_digit_mask(img):
+    print(img)
     imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(imgHSV, lower, upper)
     kernel = kernel = np.ones((4, 4), np.uint8)
@@ -100,16 +101,15 @@ def find_circle(img):
     return total_circles, total_uknowns, total_shapes
 
 
-def get_features(image_path):
+def get_features(image):
     features = []
-    img = cv2.imread(image_path)
-    features.append(numberOfDigits(img))
-    features.append(calculate_perimeter(img))
-    circles, unkowns, total = find_circle(img)
+    features.append(numberOfDigits(image))
+    features.append(calculate_perimeter(image))
+    circles, unkowns, total = find_circle(image)
     features.append(circles)
     features.append(unkowns)
     features.append(total)
-    features.append(calculate_area(img))
+    features.append(calculate_area(image))
     return features
 
 
@@ -124,7 +124,8 @@ def get_all_features(image_dir, debug=False):
             x += features
             y += labels
         else:
-            x.append(get_features(path))
+            img = cv2.imread(path)
+            x.append(get_features(img))
             label = image_dir.replace("segmented_data/", "")
             y.append(int(label))
             if debug:
