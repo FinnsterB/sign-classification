@@ -7,7 +7,6 @@ upper = np.array([164, 255, 245])
 
 
 def create_digit_mask(img):
-    print(img)
     imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(imgHSV, lower, upper)
     kernel = kernel = np.ones((4, 4), np.uint8)
